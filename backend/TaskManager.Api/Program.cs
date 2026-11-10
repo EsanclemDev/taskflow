@@ -12,15 +12,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 //Corrs Policy
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "https://taskflow-azh.pages.dev"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
+
 
 // PostgreSQL is only registered outside integration tests
 if (!builder.Environment.IsEnvironment("Testing"))
