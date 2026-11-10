@@ -15,6 +15,7 @@ import { EditTaskDialog } from '../../components/edit-task-dialog/edit-task-dial
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog';
 import { MatSelectModule } from '@angular/material/select';
+import { NgForm } from '@angular/forms';
 
 @Component({
   selector: 'app-tasks',
@@ -28,7 +29,6 @@ import { MatSelectModule } from '@angular/material/select';
     MatIconModule,
     MatCheckboxModule,
     MatButtonToggleModule,
-    EditTaskDialog,
     MatSelectModule
 
   ],
@@ -48,7 +48,7 @@ export class Tasks implements OnInit {
   searchTerm = signal('');
   sortBy = signal<'newest' | 'oldest' | 'title'>('newest');
   creating = signal(false);
-  
+
   newTask = {
     title: '',
     description: ''
@@ -63,37 +63,37 @@ export class Tasks implements OnInit {
   );
 
 
-filteredTasks = computed(() => {
-  const currentFilter = this.filter();
-  const search = this.searchTerm().trim().toLowerCase();
-  const sort = this.sortBy();
+  filteredTasks = computed(() => {
+    const currentFilter = this.filter();
+    const search = this.searchTerm().trim().toLowerCase();
+    const sort = this.sortBy();
 
-  const filtered = this.tasks().filter(task => {
-    const matchesStatus =
-      currentFilter === 'all' ||
-      (currentFilter === 'pending' && !task.isCompleted) ||
-      (currentFilter === 'completed' && task.isCompleted);
+    const filtered = this.tasks().filter(task => {
+      const matchesStatus =
+        currentFilter === 'all' ||
+        (currentFilter === 'pending' && !task.isCompleted) ||
+        (currentFilter === 'completed' && task.isCompleted);
 
-    const matchesSearch =
-      task.title.toLowerCase().includes(search) ||
-      (task.description ?? '').toLowerCase().includes(search);
+      const matchesSearch =
+        task.title.toLowerCase().includes(search) ||
+        (task.description ?? '').toLowerCase().includes(search);
 
-    return matchesStatus && matchesSearch;
+      return matchesStatus && matchesSearch;
+    });
+
+    return filtered.sort((a, b) => {
+      if (sort === 'title') {
+        return a.title.localeCompare(b.title, 'es');
+      }
+
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+
+      return sort === 'oldest'
+        ? dateA - dateB
+        : dateB - dateA;
+    });
   });
-
-  return filtered.sort((a, b) => {
-    if (sort === 'title') {
-      return a.title.localeCompare(b.title, 'es');
-    }
-
-    const dateA = new Date(a.createdAt).getTime();
-    const dateB = new Date(b.createdAt).getTime();
-
-    return sort === 'oldest'
-      ? dateA - dateB
-      : dateB - dateA;
-  });
-});
 
 
   ngOnInit(): void {
@@ -118,8 +118,7 @@ filteredTasks = computed(() => {
     });
   }
 
-
-  createTask(): void {
+  createTask(form: NgForm): void {
     const title = this.newTask.title.trim();
 
     if (title.length < 3 || title.length > 100) {
@@ -135,7 +134,11 @@ filteredTasks = computed(() => {
       description: this.newTask.description.trim() || null
     }).subscribe({
       next: () => {
-        this.newTask = { title: '', description: '' };
+        form.resetForm({
+          title: '',
+          description: ''
+        });
+
         this.creating.set(false);
         this.loadTasks();
         this.showNotification('Tarea creada correctamente');

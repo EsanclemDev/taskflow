@@ -1,8 +1,14 @@
 
 import { Routes } from '@angular/router';
-import { Tasks } from './pages/tasks/tasks';
 
 export const routes: Routes = [
-  { path: '', component: Tasks },
-  { path: '**', redirectTo: '' }
+  {
+    path: '',
+    loadComponent: () =>
+      import('./pages/tasks/tasks').then(m => m.Tasks)
+  },
+  {
+    path: '**',
+    redirectTo: ''
+  }
 ];
