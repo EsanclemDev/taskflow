@@ -1,0 +1,46 @@
+
+<h2 mat-dialog-title>Editar tarea</h2>
+
+<mat-dialog-content>
+  <form #editForm="ngForm" (ngSubmit)="save()" id="editTaskForm">
+
+    <mat-form-field appearance="outline">
+      <mat-label>Título</mat-label>
+      <input
+        matInput
+        name="title"
+        [(ngModel)]="form.title"
+        required
+        minlength="3"
+        maxlength="100"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Descripción</mat-label>
+      <textarea
+        matInput
+        name="description"
+        [(ngModel)]="form.description"
+        maxlength="500"
+        rows="4"
+      ></textarea>
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">
+    Cancelar
+  </button>
+
+  <button
+    mat-flat-button
+    type="submit"
+    form="editTaskForm"
+    [disabled]="editForm.invalid"
+  >
+    Guardar cambios
+  </button>
+</mat-dialog-actions>

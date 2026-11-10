@@ -1,0 +1,66 @@
+
+.confirm-dialog {
+  padding: 28px;
+  min-width: 0;
+}
+
+.warning-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: #fee2e2;
+  color: #dc2626;
+
+  mat-icon {
+    color: inherit;
+  }
+}
+
+h2[mat-dialog-title] {
+  margin: 0 0 12px;
+  padding: 0;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+mat-dialog-content {
+  padding: 0 !important;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+
+  p {
+    margin: 0 0 16px;
+  }
+}
+
+.task-name {
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.warning-text {
+  color: #dc2626;
+  font-size: 12px;
+}
+
+mat-dialog-actions {
+  padding: 12px 0 0;
+  gap: 10px;
+}
+
+.delete-button {
+  background: #dc2626 !important;
+  color: #fff !important;
+}

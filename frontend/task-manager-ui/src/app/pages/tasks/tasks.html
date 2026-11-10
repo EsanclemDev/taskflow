@@ -1,0 +1,157 @@
+<div class="dashboard">
+
+    <header class="dashboard-header">
+        <div>
+            <span class="eyebrow">WORKSPACE / OVERVIEW</span>
+            <h1>Mis tareas</h1>
+            <p>Organiza tu trabajo y mantén el control de tus objetivos.</p>
+        </div>
+
+        <button mat-stroked-button (click)="loadTasks()">
+            <mat-icon>refresh</mat-icon>
+            Actualizar
+        </button>
+    </header>
+
+    <section class="stats">
+        <mat-card>
+            <span>Total de tareas</span>
+            <strong>{{ tasks().length }}</strong>
+        </mat-card>
+
+        <mat-card>
+            <span>Pendientes</span>
+            <strong>{{ pendingCount() }}</strong>
+        </mat-card>
+
+        <mat-card>
+            <span>Completadas</span>
+            <strong>{{ completedCount() }}</strong>
+        </mat-card>
+    </section>
+
+    <section class="content-grid">
+
+        <mat-card class="create-card">
+            <mat-card-header>
+                <mat-card-title>Nueva tarea</mat-card-title>
+                <mat-card-subtitle>Añade algo a tu lista de trabajo</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+                <form (ngSubmit)="createTask()" #taskForm="ngForm">
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Título de la tarea</mat-label>
+                        <input matInput name="title" [(ngModel)]="newTask.title" required minlength="3"
+                            maxlength="100" />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Descripción</mat-label>
+                        <textarea matInput name="description" [(ngModel)]="newTask.description" maxlength="500"
+                            rows="4"></textarea>
+                    </mat-form-field>
+
+                    <button mat-flat-button type="submit" [disabled]="taskForm.invalid || creating()">
+                        <mat-icon>add</mat-icon>
+                        {{ creating() ? 'Guardando...' : 'Crear tarea' }}
+                    </button>
+                </form>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card class="task-list-card">
+            <mat-card-header>
+                <mat-card-title>Listado de tareas</mat-card-title>
+                <mat-card-subtitle>Gestiona tus tareas pendientes y completadas</mat-card-subtitle>
+            </mat-card-header>
+
+            <div class="task-filters">
+                <mat-button-toggle-group [value]="filter()" (change)="filter.set($event.value)"
+                    aria-label="Filtrar tareas">
+                    <mat-button-toggle value="all">
+                        Todas
+                    </mat-button-toggle>
+
+                    <mat-button-toggle value="pending">
+                        Pendientes
+                    </mat-button-toggle>
+
+                    <mat-button-toggle value="completed">
+                        Completadas
+                    </mat-button-toggle>
+                </mat-button-toggle-group>
+
+            </div>
+
+            <div class="task-toolbar">
+
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Buscar tareas</mat-label>
+
+                    <mat-icon matPrefix>search</mat-icon>
+
+                    <input matInput type="search" placeholder="Buscar por título o descripción" [ngModel]="searchTerm()"
+                        (ngModelChange)="searchTerm.set($event)" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Ordenar por</mat-label>
+
+                    <mat-select [value]="sortBy()" (valueChange)="sortBy.set($event)">
+                        <mat-option value="newest">Más recientes</mat-option>
+                        <mat-option value="oldest">Más antiguas</mat-option>
+                        <mat-option value="title">Título (A-Z)</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+            </div>
+
+            <mat-card-content>
+
+                @if (loading()) {
+                <p>Cargando tareas...</p>
+                }
+
+                @if (error()) {
+                <p class="error">{{ error() }}</p>
+                }
+
+                @if (!loading() && !error() && filteredTasks().length === 0) {
+                <div class="empty-state">
+                    <mat-icon>task_alt</mat-icon>
+                    <h3>No hay tareas</h3>
+                    <p>No hay tareas que coincidan con este filtro.</p>
+                </div>
+                }
+
+                <div class="task-list">
+                    @for (task of filteredTasks(); track task.id) {
+                    <div class="task-item" [class.completed]="task.isCompleted">
+
+                        <mat-checkbox [checked]="task.isCompleted" (change)="toggleTask(task)"></mat-checkbox>
+
+                        <div class="task-info">
+                            <h3>{{ task.title }}</h3>
+                            <p>{{ task.description || 'Sin descripción' }}</p>
+                        </div>
+
+                        <button mat-icon-button type="button" aria-label="Editar tarea" (click)="editTask(task)">
+                            <mat-icon>edit_outline</mat-icon>
+                        </button>
+
+                        <button mat-icon-button type="button" aria-label="Eliminar tarea"
+                            [disabled]="deletingTaskId() === task.id" (click)="deleteTask(task)">
+                            <mat-icon>delete_outline</mat-icon>
+                        </button>
+
+                    </div>
+                    }
+                </div>
+
+            </mat-card-content>
+        </mat-card>
+
+    </section>
+</div>

@@ -1,0 +1,38 @@
+
+<div class="confirm-dialog">
+
+  <div class="warning-icon">
+    <mat-icon>delete_outline</mat-icon>
+  </div>
+
+  <h2 mat-dialog-title>Eliminar tarea</h2>
+
+  <mat-dialog-content>
+    <p>¿Estás seguro de que quieres eliminar esta tarea?</p>
+
+    <div class="task-name">
+      {{ data.title }}
+    </div>
+
+    <p class="warning-text">
+      Esta acción no se puede deshacer.
+    </p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">
+      Cancelar
+    </button>
+
+    <button
+      mat-flat-button
+      class="delete-button"
+      type="button"
+      (click)="confirm()"
+    >
+      <mat-icon>delete</mat-icon>
+      Eliminar
+    </button>
+  </mat-dialog-actions>
+
+</div>

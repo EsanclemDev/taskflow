@@ -1,0 +1,49 @@
+
+# =========================
+# .NET / ASP.NET Core
+# =========================
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# =========================
+# Angular / Node.js
+# =========================
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+**/.cache/
+npm-debug.log*
+yarn-error.log*
+
+# =========================
+# Entorno y credenciales
+# =========================
+.env
+.env.*
+!.env.example
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/secrets.json
+*.pfx
+*.p12
+*.pem
+*.key
+
+# =========================
+# IDE / Sistema operativo
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs y archivos temporales
+# =========================
+*.log
+*.tmp
+*.bak
