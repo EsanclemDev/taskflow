@@ -21,10 +21,14 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-// PostgreSQL
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// PostgreSQL is only registered outside integration tests
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseNpgsql(
+            builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 var app = builder.Build();
 
@@ -41,3 +45,4 @@ app.UseCors("AngularFrontend");
 app.MapControllers();
 
 app.Run();
+public partial class Program { }
