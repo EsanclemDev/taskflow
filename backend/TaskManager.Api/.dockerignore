@@ -1,0 +1,10 @@
+
+**/bin/
+**/obj/
+**/publish/
+**/.vs/
+**/.git/
+**/.env
+**/.env.*
+**/appsettings.Development.json
+**/appsettings.Local.json
