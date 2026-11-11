@@ -205,6 +205,36 @@ private Task<RefreshRotationResult> HandleRotatedTokenAsync(
                 .SetProperty(s => s.RevocationReason, "ReuseDetected"));
     }
 
+    public async Task<bool> LogoutFamilyAsync(string? refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return false;
+
+        var tokenHash = HashToken(refreshToken);
+
+        // Buscamos también tokens previamente rotados.
+        // El navegador puede enviar un token antiguo si
+        // otra pestaña acaba de renovar la sesión.
+        var session = await _context.RefreshSessions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.TokenHash == tokenHash);
+
+        if (session == null)
+            return false;
+
+        var now = DateTime.UtcNow;
+
+        var affectedRows = await _context.RefreshSessions
+            .Where(s =>
+                s.FamilyId == session.FamilyId &&
+                s.RevokedAt == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(s => s.RevokedAt, now)
+                .SetProperty(s => s.RevocationReason, "Logout"));
+
+        return affectedRows > 0;
+    }
+
     public async Task<bool> RevokeSessionAsync(
         string? refreshToken)
     {

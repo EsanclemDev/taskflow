@@ -251,6 +251,7 @@ public class AuthController : ControllerBase
         });
     }
 
+
     [ValidateAuthOrigin]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
@@ -258,7 +259,7 @@ public class AuthController : ControllerBase
         var refreshToken =
             Request.Cookies["taskflow_refresh"];
 
-        await _refreshTokenService.RevokeSessionAsync(
+        await _refreshTokenService.LogoutFamilyAsync(
             refreshToken
         );
 
@@ -266,6 +267,7 @@ public class AuthController : ControllerBase
 
         return NoContent();
     }
+
 
     private void SetRefreshTokenCookie(string refreshToken)
     {
