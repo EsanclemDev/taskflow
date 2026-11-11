@@ -16,6 +16,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-tasks',
@@ -40,7 +42,10 @@ export class Tasks implements OnInit {
   private taskService = inject(TaskService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private authService = inject(AuthService);
+  private router = inject(Router);
 
+  loggingOut = signal(false);
   tasks = signal<Task[]>([]);
   loading = signal(false);
   error = signal('');
@@ -240,6 +245,7 @@ export class Tasks implements OnInit {
       });
     });
   }
+
   private showNotification(message: string): void {
     this.snackBar.open(message, 'Cerrar', {
       duration: 3000,
@@ -247,4 +253,28 @@ export class Tasks implements OnInit {
       verticalPosition: 'bottom'
     });
   }
+
+  logout(): void {
+    if (this.loggingOut()) {
+      return;
+    }
+
+    this.loggingOut.set(true);
+
+    this.authService.logout().subscribe({
+      next: () => {
+        this.loggingOut.set(false);
+        void this.router.navigateByUrl('/login');
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        this.loggingOut.set(false);
+        this.showNotification(
+          'No se pudo confirmar el cierre de sesión en el servidor.'
+        );
+        void this.router.navigateByUrl('/login');
+      }
+    });
+  }
+
 }

@@ -372,3 +372,16 @@
     padding: 20px 20px 0;
   }
 }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .header-actions {
+    width: 100%;
+  }
+}
