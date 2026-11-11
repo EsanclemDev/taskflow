@@ -17,17 +17,20 @@ public class AuthController : ControllerBase
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly AccessTokenService _accessTokenService;
     private readonly RefreshTokenService _refreshTokenService;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         AccessTokenService accessTokenService,
+        IConfiguration IConfiguration,
         RefreshTokenService refreshTokenService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _accessTokenService = accessTokenService;
         _refreshTokenService = refreshTokenService;
+        _configuration = IConfiguration;
     }
 
     [HttpPost("register")]
@@ -174,8 +177,8 @@ public class AuthController : ControllerBase
                 !await _signInManager.CanSignInAsync(existingUser) ||
                 await _userManager.IsLockedOutAsync(existingUser))
             {
-                await _refreshTokenService.RevokeSessionAsync(
-                    refreshToken
+                await _refreshTokenService.LogoutFamilyAsync(
+                     refreshToken
                 );
 
                 DeleteRefreshTokenCookie();
@@ -278,7 +281,7 @@ public class AuthController : ControllerBase
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = GetRefreshCookieSameSite(),
                 Path = "/api/auth",
                 MaxAge = TimeSpan.FromDays(7),
                 IsEssential = true
@@ -297,5 +300,17 @@ public class AuthController : ControllerBase
                 SameSite = SameSiteMode.None
             }
         );
+    }
+    private SameSiteMode GetRefreshCookieSameSite()
+    {
+        var configuredValue =
+            _configuration["Auth:RefreshCookieSameSite"];
+
+        return Enum.TryParse<SameSiteMode>(
+            configuredValue,
+            ignoreCase: true,
+            out var sameSite)
+            ? sameSite
+            : SameSiteMode.None;
     }
 }

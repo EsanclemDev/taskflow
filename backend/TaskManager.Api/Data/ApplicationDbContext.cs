@@ -1,11 +1,14 @@
 
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Api.Models;
 
 namespace TaskManager.Api.Data;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+public class ApplicationDbContext :
+    IdentityDbContext<ApplicationUser>,
+    IDataProtectionKeyContext
 {
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options)
@@ -17,6 +20,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<RefreshSession> RefreshSessions
         => Set<RefreshSession>();
+
+    // Almacenamiento persistente de claves de Data Protection
+    public DbSet<DataProtectionKey> DataProtectionKeys
+        => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -30,7 +37,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Cascade);
 
         // Configuración de sesiones
-
         builder.Entity<RefreshSession>(entity =>
         {
             entity.HasKey(session => session.Id);
@@ -56,10 +62,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(session => session.RevocationReason)
                 .HasMaxLength(32);
 
-            // Facilita localizar todas las sesiones
-            // pertenecientes a una misma familia.
             entity.HasIndex(session => session.FamilyId);
         });
-
     }
+
 }

@@ -1,5 +1,6 @@
 
 using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Api.Data;
@@ -12,9 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AccessTokenService>();
-
-// Data Protection
-builder.Services.AddDataProtection();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -42,6 +40,12 @@ if (!builder.Environment.IsEnvironment("Testing"))
         options.UseNpgsql(
             builder.Configuration.GetConnectionString("DefaultConnection")));
 }
+
+// Persistencia de claves de autenticación
+builder.Services
+    .AddDataProtection()
+    .SetApplicationName("TaskFlow")
+    .PersistKeysToDbContext<ApplicationDbContext>();
 
 // ASP.NET Core Identity
 builder.Services
