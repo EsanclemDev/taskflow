@@ -24,18 +24,37 @@ export async function onRequest(context) {
             backendOrigin.search ||
             backendOrigin.hash
         ) {
-            throw new Error('Origen no válido');
+            throw new Error('Origen no valido');
         }
     } catch {
         return new Response(
-            'Configuración del backend no válida.',
+            'Configuracion del backend no valida.',
             { status: 503 }
         );
     }
 
     const incomingUrl = new URL(request.url);
+    const origin = request.headers.get('Origin');
+    const method = request.method.toUpperCase();
 
-    // Mantener la ruta /api y sus parámetros.
+    const unsafeMethod = ![
+        'GET',
+        'HEAD',
+        'OPTIONS'
+    ].includes(method);
+
+    // No permitir que una web externa utilice
+    // el proxy para saltarse la validacion CSRF.
+    if (
+        unsafeMethod &&
+        origin !== incomingUrl.origin
+    ) {
+        return new Response(
+            'Origen no autorizado.',
+            { status: 403 }
+        );
+    }
+
     const targetUrl = new URL(
         incomingUrl.pathname + incomingUrl.search,
         backendOrigin
@@ -43,13 +62,18 @@ export async function onRequest(context) {
 
     const headers = new Headers(request.headers);
 
-    // Evitar enviar al backend cabeceras de
-    // autenticación propias de Cloudflare.
+    // No reenviar credenciales de Cloudflare.
     headers.delete('cf-access-jwt-assertion');
     headers.delete('cf-access-authenticated-user-email');
 
-    // El backend recibe el origen público del navegador.
-    headers.set('Origin', incomingUrl.origin);
+    // Solo establecer un origen validado.
+    if (unsafeMethod) {
+        headers.set('Origin', incomingUrl.origin);
+    } else if (origin) {
+        // Conservar el origen real en peticiones
+        // que no modifican datos.
+        headers.set('Origin', origin);
+    }
 
     const upstreamRequest = new Request(
         targetUrl.toString(),
@@ -66,13 +90,9 @@ export async function onRequest(context) {
     const responseHeaders =
         new Headers(upstreamResponse.headers);
 
-    // El navegador accede a la API mediante el
-    // mismo origen; no necesitamos CORS aquí.
     responseHeaders.delete('access-control-allow-origin');
     responseHeaders.delete('access-control-allow-credentials');
 
-    // No almacenar respuestas de autenticación
-    // ni datos privados en cachés intermedias.
     responseHeaders.set('Cache-Control', 'no-store');
 
     return new Response(upstreamResponse.body, {

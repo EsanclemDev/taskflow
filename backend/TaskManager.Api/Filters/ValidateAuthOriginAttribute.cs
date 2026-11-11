@@ -10,7 +10,8 @@ public class ValidateAuthOriginAttribute : ActionFilterAttribute
         new(StringComparer.OrdinalIgnoreCase)
         {
             "http://localhost:4200",
-            "https://taskflow-azh.pages.dev"
+            "https://taskflow-azh.pages.dev",
+            "https://taskflow-beta.pages.dev"
         };
 
     public override void OnActionExecuting(
