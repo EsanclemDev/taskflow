@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using TaskManager.Api.Data;
 using TaskManager.Api.Models;
 
@@ -28,7 +29,8 @@ public class RefreshTokenService
     public string HashToken(string token)
     {
         return Convert.ToHexString(
-            SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+            SHA256.HashData(
+                Encoding.UTF8.GetBytes(token)));
     }
 
     public async Task<string> CreateSessionAsync(
@@ -73,52 +75,72 @@ public class RefreshTokenService
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
-            return new(RefreshRotationStatus.InvalidToken);
+            return new RefreshRotationResult(
+                RefreshRotationStatus.InvalidToken);
         }
 
         var tokenHash = HashToken(refreshToken);
-        var now = DateTime.UtcNow;
 
-        // Consultamos también tokens revocados para
-        // poder detectar intentos de reutilización.
+        // Primera lectura para localizar la familia.
+        // El estado se comprobará de nuevo después
+        // de adquirir el bloqueo transaccional.
         var session = await _context.RefreshSessions
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.TokenHash == tokenHash);
+            .FirstOrDefaultAsync(
+                s => s.TokenHash == tokenHash);
 
         if (session == null)
-            return new(RefreshRotationStatus.InvalidToken);
-
-        if (session.ExpiresAt <= now)
-            return new(RefreshRotationStatus.ExpiredToken);
-
-        if (session.RevocationReason == "Logout" ||
-            session.RevocationReason == "ReuseDetected")
         {
-            return new(RefreshRotationStatus.LoggedOut);
+            return new RefreshRotationResult(
+                RefreshRotationStatus.InvalidToken);
         }
-
-        if (session.RevocationReason == "Rotated")
-        {
-            return await HandleRotatedTokenAsync(session, now);
-        }
-
-        if (session.RevokedAt != null)
-            return new(RefreshRotationStatus.InvalidToken);
-
-        // Impide renovar una familia ya invalidada.
-        var familyRevoked = await _context.RefreshSessions
-            .AnyAsync(s =>
-                s.FamilyId == session.FamilyId &&
-                s.RevocationReason == "ReuseDetected");
-
-        if (familyRevoked)
-            return new(RefreshRotationStatus.LoggedOut);
 
         await using var transaction =
             await _context.Database.BeginTransactionAsync();
 
-        // Actualización condicional: solo una petición
-        // puede consumir el refresh token.
+        await LockFamilyAsync(session.FamilyId);
+
+        // Volvemos a consultar el token dentro de la
+        // transacción y después de adquirir el bloqueo.
+        session = await _context.RefreshSessions
+            .AsNoTracking()
+            .FirstAsync(s => s.Id == session.Id);
+
+        var now = DateTime.UtcNow;
+
+        // Una revocación de la familia tiene prioridad
+        // sobre cualquier intento de renovación.
+        var familyRevoked = await _context.RefreshSessions
+            .AsNoTracking()
+            .AnyAsync(s =>
+                s.FamilyId == session.FamilyId &&
+                (s.RevocationReason == "Logout" ||
+                 s.RevocationReason == "ReuseDetected"));
+
+        if (familyRevoked)
+        {
+            return new RefreshRotationResult(
+                RefreshRotationStatus.LoggedOut);
+        }
+
+        if (session.ExpiresAt <= now)
+        {
+            return new RefreshRotationResult(
+                RefreshRotationStatus.ExpiredToken);
+        }
+
+        if (session.RevocationReason == "Rotated")
+        {
+            return HandleRotatedToken(session);
+        }
+
+        if (session.RevokedAt != null)
+        {
+            return new RefreshRotationResult(
+                RefreshRotationStatus.InvalidToken);
+        }
+
+        // Solo se permite consumir el token una vez.
         var affectedRows = await _context.RefreshSessions
             .Where(s =>
                 s.Id == session.Id &&
@@ -126,26 +148,34 @@ public class RefreshTokenService
                 s.ExpiresAt > now)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(s => s.RevokedAt, now)
-                .SetProperty(s => s.RevocationReason, "Rotated")
+                .SetProperty(
+                    s => s.RevocationReason,
+                    "Rotated")
                 .SetProperty(s => s.LastUsedAt, now));
 
         if (affectedRows != 1)
         {
             await transaction.RollbackAsync();
 
-            // Otra petición puede haberlo rotado.
-            var updatedSession = await _context.RefreshSessions
-                .AsNoTracking()
-                .FirstAsync(s => s.Id == session.Id);
+            var updatedSession =
+                await _context.RefreshSessions
+                    .AsNoTracking()
+                    .FirstAsync(s => s.Id == session.Id);
 
             if (updatedSession.RevocationReason == "Rotated")
             {
-                return await HandleRotatedTokenAsync(
-                    updatedSession,
-                    DateTime.UtcNow);
+                return HandleRotatedToken(updatedSession);
             }
 
-            return new(RefreshRotationStatus.InvalidToken);
+            if (updatedSession.RevocationReason == "Logout" ||
+                updatedSession.RevocationReason == "ReuseDetected")
+            {
+                return new RefreshRotationResult(
+                    RefreshRotationStatus.LoggedOut);
+            }
+
+            return new RefreshRotationResult(
+                RefreshRotationStatus.InvalidToken);
         }
 
         var newToken = GenerateToken();
@@ -169,58 +199,64 @@ public class RefreshTokenService
             session.FamilyId);
     }
 
-    
-private Task<RefreshRotationResult> HandleRotatedTokenAsync(
-    RefreshSession session,
-    DateTime now)
-{
-    // Un token rotado nunca puede volver a utilizarse.
-    //
-    // No revocamos automáticamente toda la familia:
-    // una petición concurrente o una pestaña suspendida
-    // también puede presentar un token antiguo.
-    //
-    // Registraremos estos intentos para poder aplicar
-    // una política de detección más precisa.
-
-    return Task.FromResult(
-        new RefreshRotationResult(
+    private static RefreshRotationResult HandleRotatedToken(
+        RefreshSession session)
+    {
+        // Un token rotado no puede volver a utilizarse.
+        // No revocamos automáticamente toda la familia,
+        // porque podría tratarse de una petición
+        // concurrente o de una pestaña suspendida.
+        return new RefreshRotationResult(
             RefreshRotationStatus.AlreadyRotated,
-            FamilyId: session.FamilyId
-        )
-    );
-}
-
+            FamilyId: session.FamilyId);
+    }
 
     public async Task<int> RevokeFamilyAsync(Guid familyId)
     {
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        await LockFamilyAsync(familyId);
+
         var now = DateTime.UtcNow;
 
-        return await _context.RefreshSessions
+        var affectedRows = await _context.RefreshSessions
             .Where(s =>
                 s.FamilyId == familyId &&
                 s.RevokedAt == null)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(s => s.RevokedAt, now)
-                .SetProperty(s => s.RevocationReason, "ReuseDetected"));
+                .SetProperty(
+                    s => s.RevocationReason,
+                    "ReuseDetected"));
+
+        await transaction.CommitAsync();
+
+        return affectedRows;
     }
 
-    public async Task<bool> LogoutFamilyAsync(string? refreshToken)
+    public async Task<bool> LogoutFamilyAsync(
+        string? refreshToken)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
             return false;
 
         var tokenHash = HashToken(refreshToken);
 
-        // Buscamos también tokens previamente rotados.
-        // El navegador puede enviar un token antiguo si
-        // otra pestaña acaba de renovar la sesión.
+        // También permite cerrar una familia utilizando
+        // un token que ya fue rotado.
         var session = await _context.RefreshSessions
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.TokenHash == tokenHash);
+            .FirstOrDefaultAsync(
+                s => s.TokenHash == tokenHash);
 
         if (session == null)
             return false;
+
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        await LockFamilyAsync(session.FamilyId);
 
         var now = DateTime.UtcNow;
 
@@ -230,7 +266,11 @@ private Task<RefreshRotationResult> HandleRotatedTokenAsync(
                 s.RevokedAt == null)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(s => s.RevokedAt, now)
-                .SetProperty(s => s.RevocationReason, "Logout"));
+                .SetProperty(
+                    s => s.RevocationReason,
+                    "Logout"));
+
+        await transaction.CommitAsync();
 
         return affectedRows > 0;
     }
@@ -250,8 +290,46 @@ private Task<RefreshRotationResult> HandleRotatedTokenAsync(
                 s.RevokedAt == null)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(s => s.RevokedAt, now)
-                .SetProperty(s => s.RevocationReason, "Logout"));
+                .SetProperty(
+                    s => s.RevocationReason,
+                    "Logout"));
 
         return affectedRows == 1;
+    }
+
+    private async Task LockFamilyAsync(Guid familyId)
+    {
+        // Los bloqueos transaccionales se utilizan
+        // únicamente con PostgreSQL.
+        if (!_context.Database.IsNpgsql())
+            return;
+
+        var transaction =
+            _context.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "El bloqueo requiere una transacción activa.");
+
+        var connection =
+            _context.Database.GetDbConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.Transaction =
+            transaction.GetDbTransaction();
+
+        // PostgreSQL libera automáticamente este bloqueo
+        // cuando finaliza la transacción.
+        command.CommandText =
+            "SELECT pg_advisory_xact_lock(" +
+            "hashtextextended(@familyId, 0))";
+
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "familyId";
+        parameter.Value = familyId.ToString();
+
+        command.Parameters.Add(parameter);
+
+        await command.ExecuteNonQueryAsync();
     }
 }
