@@ -1,5 +1,6 @@
 <div class="dashboard">
 
+
     <header class="dashboard-header">
         <div>
             <span class="eyebrow">WORKSPACE / OVERVIEW</span>
@@ -7,11 +8,19 @@
             <p>Organiza tu trabajo y mantén el control de tus objetivos.</p>
         </div>
 
-        <button mat-stroked-button (click)="loadTasks()">
-            <mat-icon>refresh</mat-icon>
-            Actualizar
-        </button>
+        <div class="header-actions">
+            <button mat-stroked-button type="button" (click)="loadTasks()" [disabled]="loading() || loggingOut()">
+                <mat-icon>refresh</mat-icon>
+                Actualizar
+            </button>
+
+            <button mat-stroked-button type="button" (click)="logout()" [disabled]="loggingOut()">
+                <mat-icon>logout</mat-icon>
+                {{ loggingOut() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+            </button>
+        </div>
     </header>
+
 
     <section class="stats">
         <mat-card>
@@ -39,7 +48,7 @@
             </mat-card-header>
 
             <mat-card-content>
-               <form (ngSubmit)="createTask(taskForm)" #taskForm="ngForm">
+                <form (ngSubmit)="createTask(taskForm)" #taskForm="ngForm">
 
                     <mat-form-field appearance="outline">
                         <mat-label>Título de la tarea</mat-label>

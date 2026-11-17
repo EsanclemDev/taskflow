@@ -22,6 +22,18 @@ public class TaskManagerWebApplicationFactory
         _connection.Open();
     }
 
+    public HttpClient CreateHttpsClient()
+    {
+        return CreateClient(
+            new Microsoft.AspNetCore.Mvc.Testing
+                .WebApplicationFactoryClientOptions
+            {
+                BaseAddress = new Uri("https://localhost"),
+                HandleCookies = true,
+                AllowAutoRedirect = false
+            });
+    }
+
     protected override void ConfigureWebHost(
         IWebHostBuilder builder)
     {

@@ -11,4 +11,8 @@ public class TaskItem
     public bool IsCompleted { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public string? UserId { get; set; }
+
+    public ApplicationUser? User { get; set; }
 }
