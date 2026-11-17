@@ -112,11 +112,16 @@ public class AuthController : ControllerBase
             });
         }
 
-        var accessToken =
-            await _accessTokenService.GenerateAsync(user);
+        var session =
+            await _refreshTokenService.CreateSessionWithFamilyAsync(user);
 
-        var refreshToken =
-            await _refreshTokenService.CreateSessionAsync(user);
+        var accessToken =
+            await _accessTokenService.GenerateAsync(
+                user,
+                session.FamilyId);
+
+        var refreshToken = session.RefreshToken;
+
 
         SetRefreshTokenCookie(refreshToken);
 
@@ -241,8 +246,21 @@ public class AuthController : ControllerBase
             });
         }
 
+
+        if (!result.FamilyId.HasValue)
+        {
+            DeleteRefreshTokenCookie();
+            return Unauthorized(new
+            {
+                Message = "La sesión no es válida."
+            });
+        }
+
         var accessToken =
-            await _accessTokenService.GenerateAsync(user);
+            await _accessTokenService.GenerateAsync(
+                user,
+                result.FamilyId.Value);
+
 
         SetRefreshTokenCookie(result.RefreshToken!);
 

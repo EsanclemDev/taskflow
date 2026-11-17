@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using TaskManager.Api.Data;
 using TaskManager.Api.Models;
 using TaskManager.Api.Services;
+using TaskManager.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,7 +106,13 @@ app.UseHttpsRedirection();
 
 app.UseCors("AngularFrontend");
 
+// 1. Identificar al usuario mediante su access token.
 app.UseAuthentication();
+
+// 2. Comprobar que la familia de sesión sigue activa.
+app.UseMiddleware<ActiveSessionMiddleware>();
+
+// 3. Autorizar únicamente sesiones válidas.
 app.UseAuthorization();
 
 // Controllers

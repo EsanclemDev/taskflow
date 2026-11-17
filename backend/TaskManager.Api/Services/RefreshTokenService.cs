@@ -33,15 +33,24 @@ public class RefreshTokenService
                 Encoding.UTF8.GetBytes(token)));
     }
 
+
     public async Task<string> CreateSessionAsync(
         ApplicationUser user)
     {
+        var result = await CreateSessionWithFamilyAsync(user);
+        return result.RefreshToken;
+    }
+
+    public async Task<(string RefreshToken, Guid FamilyId)>
+        CreateSessionWithFamilyAsync(ApplicationUser user)
+    {
         var now = DateTime.UtcNow;
         var refreshToken = GenerateToken();
+        var familyId = Guid.NewGuid();
 
         _context.RefreshSessions.Add(new RefreshSession
         {
-            FamilyId = Guid.NewGuid(),
+            FamilyId = familyId,
             UserId = user.Id,
             TokenHash = HashToken(refreshToken),
             CreatedAt = now,
@@ -50,7 +59,7 @@ public class RefreshTokenService
 
         await _context.SaveChangesAsync();
 
-        return refreshToken;
+        return (refreshToken, familyId);
     }
 
     public async Task<RefreshSession?> FindValidSessionAsync(

@@ -1,4 +1,5 @@
 ﻿
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,8 @@ namespace TaskManager.Api.Services;
 
 public class AccessTokenService
 {
+    public const string FamilyIdClaim = "taskflow:family_id";
+
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IOptionsMonitor<BearerTokenOptions> _bearerOptions;
 
@@ -20,28 +23,38 @@ public class AccessTokenService
         _bearerOptions = bearerOptions;
     }
 
-    public async Task<string> GenerateAsync(ApplicationUser user)
+    public async Task<string> GenerateAsync(
+        ApplicationUser user,
+        Guid familyId)
     {
-        var principal =
+        var originalPrincipal =
             await _signInManager.CreateUserPrincipalAsync(user);
+
+        var identity = new ClaimsIdentity(
+            originalPrincipal.Claims,
+            originalPrincipal.Identity?.AuthenticationType);
+
+        identity.AddClaim(new Claim(
+            FamilyIdClaim,
+            familyId.ToString("D")));
+
+        var principal = new ClaimsPrincipal(identity);
 
         var options = _bearerOptions.Get(
             BearerTokenDefaults.AuthenticationScheme);
 
-        var expiresAt = DateTimeOffset.UtcNow
-            .Add(options.BearerTokenExpiration);
+        var now = DateTimeOffset.UtcNow;
 
         var properties = new AuthenticationProperties
         {
-            IssuedUtc = DateTimeOffset.UtcNow,
-            ExpiresUtc = expiresAt
+            IssuedUtc = now,
+            ExpiresUtc = now.Add(options.BearerTokenExpiration)
         };
 
         var ticket = new AuthenticationTicket(
             principal,
             properties,
-            BearerTokenDefaults.AuthenticationScheme
-        );
+            BearerTokenDefaults.AuthenticationScheme);
 
         return options.BearerTokenProtector.Protect(ticket);
     }

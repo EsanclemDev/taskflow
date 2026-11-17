@@ -12,11 +12,27 @@ export const routes: Routes = [
       import('./pages/login/login').then(m => m.Login)
   },
   {
+    path: 'register',
+    title: 'Crear cuenta | TaskFlow',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/register/register').then(m => m.Register)
+  },
+  {
     path: '',
-    title: 'Mis tareas | TaskFlow',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./pages/tasks/tasks').then(m => m.Tasks)
+      import('./layouts/dashboard-layout/dashboard-layout')
+        .then(m => m.DashboardLayout),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        title: 'Mis tareas | TaskFlow',
+        loadComponent: () =>
+          import('./pages/tasks/tasks').then(m => m.Tasks)
+      }
+    ]
   },
   {
     path: '**',

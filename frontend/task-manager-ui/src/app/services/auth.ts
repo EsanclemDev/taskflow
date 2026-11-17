@@ -47,6 +47,7 @@ export class AuthService {
     private rotationId: string | null = null;
 
     private refreshInProgress$: Observable<AuthTokens> | null = null;
+    private readonly closedGenerations = new Set<string>();
 
     private readonly channel =
         typeof BroadcastChannel !== 'undefined'
@@ -210,6 +211,10 @@ export class AuthService {
         return defer((): Observable<void> => {
             const previousGeneration = this.generation;
 
+            if (previousGeneration) {
+                this.closedGenerations.add(previousGeneration);
+            }
+
             this.sessionVersion++;
             this.clearSession();
 
@@ -248,29 +253,64 @@ export class AuthService {
     }
 
 
+    invalidateSession(expectedToken?: string): void {
+        // Si otra petición ya ha renovado el token,
+        // no debemos cerrar la nueva sesión.
+        if (
+            expectedToken &&
+            this.getAccessToken() !== expectedToken
+        ) {
+            return;
+        }
+
+        const previousGeneration = this.generation;
+
+        if (previousGeneration) {
+            this.closedGenerations.add(previousGeneration);
+        }
+
+        this.sessionVersion++;
+        this.clearSession();
+
+        this.channel?.postMessage({
+            type: 'LOGOUT',
+            generation: previousGeneration
+        } satisfies AuthChannelMessage);
+    }
+
     getAccessToken(): string | null {
         return this.tokens()?.accessToken ?? null;
     }
 
+
     private handleChannelMessage(
         message: AuthChannelMessage
     ): void {
+
+
         if (message.type === 'LOGOUT') {
-            if (
-                message.generation === null ||
-                this.generation === null ||
-                message.generation === this.generation
-            ) {
-                this.sessionVersion++;
-                this.clearSession();
+            if (message.generation) {
+                this.closedGenerations.add(message.generation);
             }
+
+            // Todas las pestañas comparten la misma sesión
+            // de refresh mediante la cookie del navegador.
+            // Un logout debe invalidar el estado local de todas.
+            this.sessionVersion++;
+            this.clearSession();
 
             return;
         }
 
+
         if (message.type === 'TOKEN_UPDATED') {
-            // No aceptar tokens de otra sesión
-            // si ya tenemos una generación distinta.
+
+            // No recuperar sesiones que ya se cerraron.
+            if (this.closedGenerations.has(message.generation)) {
+                return;
+            }
+
+            // Evitar mezclar sesiones diferentes.
             if (
                 this.generation &&
                 this.generation !== message.generation
@@ -288,6 +328,7 @@ export class AuthService {
             this.setSession(message.tokens);
         }
     }
+
 
     private assertSessionVersion(version: number): void {
         if (version !== this.sessionVersion) {
