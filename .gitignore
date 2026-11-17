@@ -48,3 +48,4 @@ Thumbs.db
 *.tmp
 *.bak
 **/publish/
+taskflow-production-migrations.sql
