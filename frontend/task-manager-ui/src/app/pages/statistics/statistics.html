@@ -1,0 +1,133 @@
+
+<section class="statistics-page">
+
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">ANÁLISIS</span>
+      <h1>Estadísticas</h1>
+      <p>Visualiza el estado y la creación de tus tareas.</p>
+    </div>
+
+    <a routerLink="/tasks" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      Mis tareas
+    </a>
+  </header>
+
+  @if (loading()) {
+    <div class="state-panel" role="status">
+      Cargando estadísticas...
+    </div>
+  } @else if (error()) {
+    <div class="state-panel error-panel" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" (click)="loadTasks()">
+        Reintentar
+      </button>
+    </div>
+  } @else {
+
+    <div class="summary-grid">
+      <article class="summary-card">
+        <span>Total</span>
+        <strong>{{ metrics().total }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Completadas</span>
+        <strong>{{ metrics().completed }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Pendientes</span>
+        <strong>{{ metrics().pending }}</strong>
+      </article>
+    </div>
+
+    <div class="charts-grid">
+
+      <section class="chart-card">
+        <div class="chart-heading">
+          <h2>Estado de las tareas</h2>
+          <p>Distribución actual</p>
+        </div>
+
+        <div class="donut-container">
+
+          <div
+            class="donut"
+            [style.background]="donutBackground()"
+            role="img"
+            [attr.aria-label]="
+              metrics().completed + ' tareas completadas y ' +
+              metrics().pending + ' pendientes'
+            "
+          >
+            <div class="donut-center">
+              <strong>{{ metrics().completionRate }}%</strong>
+              <small>completado</small>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div>
+              <span class="legend-dot completed"></span>
+              Completadas
+              <strong>{{ metrics().completed }}</strong>
+            </div>
+
+            <div>
+              <span class="legend-dot pending"></span>
+              Pendientes
+              <strong>{{ metrics().pending }}</strong>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="chart-card">
+        <div class="chart-heading">
+          <h2>Tareas creadas</h2>
+          <p>Últimos 6 meses</p>
+        </div>
+
+        <div class="bar-chart">
+          @for (month of monthlyTasks(); track month.key) {
+            <div class="bar-column">
+
+              <span class="bar-value">
+                {{ month.count }}
+              </span>
+
+              <div class="bar-track">
+                <div
+                  class="bar-fill"
+                  [style.height.%]="
+                    month.count / maxMonthlyTasks() * 100
+                  "
+                ></div>
+              </div>
+
+              <span class="bar-label">
+                {{ month.label }}
+              </span>
+
+            </div>
+          }
+        </div>
+      </section>
+
+    </div>
+
+    @if (metrics().total === 0) {
+      <div class="empty-note">
+        <mat-icon>info</mat-icon>
+        Todavía no tienes tareas. Crea algunas para empezar
+        a visualizar tus estadísticas.
+      </div>
+    }
+
+  }
+
+</section>

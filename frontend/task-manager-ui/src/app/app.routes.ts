@@ -28,9 +28,22 @@ export const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
+        title: 'Dashboard | TaskFlow',
+        loadComponent: () =>
+          import('./pages/dashboard/dashboard').then(m => m.Dashboard)
+      },
+      {
+        path: 'tasks',
         title: 'Mis tareas | TaskFlow',
         loadComponent: () =>
           import('./pages/tasks/tasks').then(m => m.Tasks)
+      },
+      {
+        path: 'statistics',
+        title: 'Estadísticas | TaskFlow',
+        loadComponent: () =>
+          import('./pages/statistics/statistics')
+            .then(m => m.Statistics)
       }
     ]
   },
