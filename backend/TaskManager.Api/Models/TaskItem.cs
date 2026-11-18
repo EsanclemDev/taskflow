@@ -1,3 +1,4 @@
+
 namespace TaskManager.Api.Models;
 
 public class TaskItem
@@ -8,9 +9,16 @@ public class TaskItem
 
     public string? Description { get; set; }
 
+    // Compatibilidad con Dashboard y Estadísticas.
+    // Se mantiene sincronizado con Status.
     public bool IsCompleted { get; set; } = false;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    // Estado real del Kanban.
+    public string Status { get; set; } =
+        TaskWorkflowStatus.Pending;
+
+    public DateTime CreatedAt { get; set; } =
+        DateTime.UtcNow;
 
     public string? UserId { get; set; }
 

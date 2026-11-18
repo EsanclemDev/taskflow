@@ -2,8 +2,11 @@
 <h2 mat-dialog-title>Editar tarea</h2>
 
 <mat-dialog-content>
-  <form #editForm="ngForm" (ngSubmit)="save()" id="editTaskForm">
-
+  <form
+    #editForm="ngForm"
+    (ngSubmit)="save()"
+    id="editTaskForm"
+  >
     <mat-form-field appearance="outline">
       <mat-label>Título</mat-label>
       <input
@@ -27,11 +30,36 @@
       ></textarea>
     </mat-form-field>
 
+    <mat-form-field appearance="outline">
+      <mat-label>Estado</mat-label>
+
+      <mat-select
+        name="status"
+        [(ngModel)]="form.status"
+        required
+      >
+        <mat-option value="pending">
+          Pendiente
+        </mat-option>
+
+        <mat-option value="in_progress">
+          En progreso
+        </mat-option>
+
+        <mat-option value="completed">
+          Completada
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
   </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="cancel()">
+  <button
+    mat-button
+    type="button"
+    (click)="cancel()"
+  >
     Cancelar
   </button>
 

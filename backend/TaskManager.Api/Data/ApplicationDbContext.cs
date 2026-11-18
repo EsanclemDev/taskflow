@@ -21,7 +21,6 @@ public class ApplicationDbContext :
     public DbSet<RefreshSession> RefreshSessions
         => Set<RefreshSession>();
 
-    // Almacenamiento persistente de claves de Data Protection
     public DbSet<DataProtectionKey> DataProtectionKeys
         => Set<DataProtectionKey>();
 
@@ -29,14 +28,21 @@ public class ApplicationDbContext :
     {
         base.OnModelCreating(builder);
 
-        // Relación entre tareas y usuarios
-        builder.Entity<TaskItem>()
-            .HasOne(task => task.User)
-            .WithMany()
-            .HasForeignKey(task => task.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Tareas y usuarios.
+        builder.Entity<TaskItem>(entity =>
+        {
+            entity.HasOne(task => task.User)
+                .WithMany()
+                .HasForeignKey(task => task.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        // Configuración de sesiones
+            entity.Property(task => task.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue(TaskWorkflowStatus.Pending)
+                .IsRequired();
+        });
+
+        // Sesiones de autenticación.
         builder.Entity<RefreshSession>(entity =>
         {
             entity.HasKey(session => session.Id);
@@ -65,5 +71,4 @@ public class ApplicationDbContext :
             entity.HasIndex(session => session.FamilyId);
         });
     }
-
 }

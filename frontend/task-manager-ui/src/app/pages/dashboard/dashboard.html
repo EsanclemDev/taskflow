@@ -1,4 +1,3 @@
-
 <section class="dashboard-page">
 
   <header class="page-heading">
@@ -39,21 +38,30 @@
       </article>
 
       <article class="metric-card">
+        <span>Pendientes</span>
+        <div class="metric-value">
+          <strong>{{ metrics().pending }}</strong>
+          <mat-icon class="pending-icon">schedule</mat-icon>
+        </div>
+        <small>Por comenzar</small>
+      </article>
+
+      <article class="metric-card">
+        <span>En progreso</span>
+        <div class="metric-value">
+          <strong>{{ metrics().inProgress }}</strong>
+          <mat-icon class="in-progress-icon">autorenew</mat-icon>
+        </div>
+        <small>En desarrollo</small>
+      </article>
+
+      <article class="metric-card">
         <span>Completadas</span>
         <div class="metric-value">
           <strong>{{ metrics().completed }}</strong>
           <mat-icon class="completed-icon">check_circle</mat-icon>
         </div>
         <small>Tareas finalizadas</small>
-      </article>
-
-      <article class="metric-card">
-        <span>Pendientes</span>
-        <div class="metric-value">
-          <strong>{{ metrics().pending }}</strong>
-          <mat-icon class="pending-icon">schedule</mat-icon>
-        </div>
-        <small>Por completar</small>
       </article>
 
       <article class="metric-card">
@@ -97,11 +105,14 @@
         </div>
 
         <div class="progress-footer">
-          <span>
-            {{ metrics().completed }} completadas
-          </span>
-          <span>
+          <span class="footer-pending">
             {{ metrics().pending }} pendientes
+          </span>
+          <span class="footer-in-progress">
+            {{ metrics().inProgress }} en progreso
+          </span>
+          <span class="footer-completed">
+            {{ metrics().completed }} completadas
           </span>
         </div>
       </section>
@@ -126,11 +137,15 @@
             @for (task of recentTasks(); track task.id) {
               <div class="recent-task">
                 <mat-icon
-                  [class.done]="task.isCompleted"
+                  [class.pending]="task.status === 'pending'"
+                  [class.in-progress]="task.status === 'in_progress'"
+                  [class.done]="task.status === 'completed'"
                 >
-                  {{ task.isCompleted
+                  {{ task.status === 'completed'
                     ? 'check_circle'
-                    : 'radio_button_unchecked' }}
+                    : task.status === 'in_progress'
+                      ? 'autorenew'
+                      : 'radio_button_unchecked' }}
                 </mat-icon>
 
                 <div class="task-info">
@@ -142,9 +157,15 @@
 
                 <span
                   class="task-status"
-                  [class.completed]="task.isCompleted"
+                  [class.pending]="task.status === 'pending'"
+                  [class.in-progress]="task.status === 'in_progress'"
+                  [class.completed]="task.status === 'completed'"
                 >
-                  {{ task.isCompleted ? 'Completada' : 'Pendiente' }}
+                  {{ task.status === 'completed'
+                    ? 'Completada'
+                    : task.status === 'in_progress'
+                      ? 'En progreso'
+                      : 'Pendiente' }}
                 </span>
               </div>
             }

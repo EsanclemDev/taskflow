@@ -1,15 +1,22 @@
 
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
   MatDialogRef
 } from '@angular/material/dialog';
+
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Task, UpdateTask } from '../../models/task';
+import { MatSelectModule } from '@angular/material/select';
+
+import {
+  Task,
+  UpdateTask
+} from '../../models/task';
 
 @Component({
   selector: 'app-edit-task-dialog',
@@ -19,13 +26,15 @@ import { Task, UpdateTask } from '../../models/task';
     MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
-    MatInputModule
+    MatInputModule,
+    MatSelectModule
   ],
   templateUrl: './edit-task-dialog.html',
   styleUrl: './edit-task-dialog.scss'
 })
 export class EditTaskDialog {
-  private dialogRef = inject(
+
+  private readonly dialogRef = inject(
     MatDialogRef<EditTaskDialog, UpdateTask>
   );
 
@@ -34,7 +43,7 @@ export class EditTaskDialog {
   form: UpdateTask = {
     title: this.task.title,
     description: this.task.description,
-    isCompleted: this.task.isCompleted
+    status: this.task.status
   };
 
   save(): void {

@@ -1,4 +1,3 @@
-
 <section class="statistics-page">
 
   <header class="page-heading">
@@ -34,13 +33,18 @@
       </article>
 
       <article class="summary-card">
-        <span>Completadas</span>
-        <strong>{{ metrics().completed }}</strong>
+        <span>Pendientes</span>
+        <strong>{{ metrics().pending }}</strong>
       </article>
 
       <article class="summary-card">
-        <span>Pendientes</span>
-        <strong>{{ metrics().pending }}</strong>
+        <span>En progreso</span>
+        <strong>{{ metrics().inProgress }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Completadas</span>
+        <strong>{{ metrics().completed }}</strong>
       </article>
     </div>
 
@@ -59,8 +63,9 @@
             [style.background]="donutBackground()"
             role="img"
             [attr.aria-label]="
-              metrics().completed + ' tareas completadas y ' +
-              metrics().pending + ' pendientes'
+              metrics().pending + ' tareas pendientes, ' +
+              metrics().inProgress + ' en progreso y ' +
+              metrics().completed + ' completadas'
             "
           >
             <div class="donut-center">
@@ -71,15 +76,21 @@
 
           <div class="legend">
             <div>
-              <span class="legend-dot completed"></span>
-              Completadas
-              <strong>{{ metrics().completed }}</strong>
-            </div>
-
-            <div>
               <span class="legend-dot pending"></span>
               Pendientes
               <strong>{{ metrics().pending }}</strong>
+            </div>
+
+            <div>
+              <span class="legend-dot in-progress"></span>
+              En progreso
+              <strong>{{ metrics().inProgress }}</strong>
+            </div>
+
+            <div>
+              <span class="legend-dot completed"></span>
+              Completadas
+              <strong>{{ metrics().completed }}</strong>
             </div>
           </div>
 

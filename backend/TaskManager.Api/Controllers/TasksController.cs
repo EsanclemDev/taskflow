@@ -77,6 +77,8 @@ public class TasksController : ControllerBase
         {
             Title = dto.Title,
             Description = dto.Description,
+            Status = TaskWorkflowStatus.Pending,
+            IsCompleted = false,
             CreatedAt = DateTime.UtcNow,
             UserId = userId
         };
@@ -110,7 +112,52 @@ public class TasksController : ControllerBase
 
         task.Title = dto.Title;
         task.Description = dto.Description;
-        task.IsCompleted = dto.IsCompleted;
+
+        if (dto.Status != null)
+        {
+            // El nuevo frontend envía el estado Kanban.
+            task.Status = dto.Status;
+            task.IsCompleted =
+                dto.Status == TaskWorkflowStatus.Completed;
+        }
+        else if (dto.IsCompleted.HasValue)
+        {
+            // Compatibilidad con el frontend anterior.
+            task.IsCompleted = dto.IsCompleted.Value;
+
+            task.Status = dto.IsCompleted.Value
+                ? TaskWorkflowStatus.Completed
+                : TaskWorkflowStatus.Pending;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // PATCH: api/tasks/5/status
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateTaskStatus(
+        int id,
+        UpdateTaskStatusDto dto)
+    {
+        var userId = _userManager.GetUserId(User);
+
+        if (userId == null)
+            return Unauthorized();
+
+        var task = await _context.Tasks
+            .FirstOrDefaultAsync(t =>
+                t.Id == id && t.UserId == userId);
+
+        if (task == null)
+            return NotFound();
+
+        task.Status = dto.Status;
+
+        // Mantener compatibilidad con las estadísticas.
+        task.IsCompleted =
+            dto.Status == TaskWorkflowStatus.Completed;
 
         await _context.SaveChangesAsync();
 

@@ -1,0 +1,15 @@
+﻿========== frontend/task-manager-ui/src/app/utils/task-metrics.ts ==========
+ARCHIVO NO ENCONTRADO
+
+========== frontend/task-manager-ui/src/app/pages/dashboard/dashboard.html ==========
+ARCHIVO NO ENCONTRADO
+
+========== frontend/task-manager-ui/src/app/pages/dashboard/dashboard.scss ==========
+ARCHIVO NO ENCONTRADO
+
+========== frontend/task-manager-ui/src/app/pages/statistics/statistics.html ==========
+ARCHIVO NO ENCONTRADO
+
+========== frontend/task-manager-ui/src/app/pages/statistics/statistics.scss ==========
+ARCHIVO NO ENCONTRADO
+

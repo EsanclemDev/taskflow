@@ -1,10 +1,10 @@
-
 import { Task } from '../models/task';
 
 export interface TaskMetrics {
   total: number;
   completed: number;
   pending: number;
+  inProgress: number;
   completionRate: number;
 }
 
@@ -16,13 +16,15 @@ export interface MonthlyTaskCount {
 
 export function calculateTaskMetrics(tasks: Task[]): TaskMetrics {
   const total = tasks.length;
-  const completed = tasks.filter(task => task.isCompleted).length;
-  const pending = total - completed;
+  const pending = tasks.filter(task => task.status === 'pending').length;
+  const inProgress = tasks.filter(task => task.status === 'in_progress').length;
+  const completed = tasks.filter(task => task.status === 'completed').length;
 
   return {
     total,
     completed,
     pending,
+    inProgress,
     completionRate:
       total === 0 ? 0 : Math.round((completed / total) * 100)
   };

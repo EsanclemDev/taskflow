@@ -1,4 +1,3 @@
-
 import {
   Component,
   DestroyRef,
@@ -45,12 +44,21 @@ export class Statistics implements OnInit {
     Math.max(1, ...this.monthlyTasks().map(item => item.count))
   );
 
+  // Distribución real de los tres estados del Kanban.
   readonly donutBackground = computed(() => {
-    const progress = this.metrics().completionRate;
+    const { total, inProgress, completed } = this.metrics();
+
+    if (total === 0) {
+      return 'conic-gradient(#e2e8f0 0% 100%)';
+    }
+
+    const completedEnd = (completed / total) * 100;
+    const progressEnd = ((completed + inProgress) / total) * 100;
 
     return `conic-gradient(
-      #2563eb 0% ${progress}%,
-      #e2e8f0 ${progress}% 100%
+      #16a34a 0% ${completedEnd}%,
+      #f59e0b ${completedEnd}% ${progressEnd}%,
+      #cbd5e1 ${progressEnd}% 100%
     )`;
   });
 

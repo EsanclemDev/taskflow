@@ -1,166 +1,639 @@
-<div class="dashboard">
 
+<div class="tasks-page">
 
-    <header class="dashboard-header">
-        <div>
-            <span class="eyebrow">WORKSPACE / OVERVIEW</span>
-            <h1>Mis tareas</h1>
-            <p>Organiza tu trabajo y mantén el control de tus objetivos.</p>
+  <!-- CABECERA -->
+
+  <header class="page-header">
+    <div class="page-heading">
+      <span class="eyebrow">WORKSPACE / TASKS</span>
+      <h1>Mis tareas</h1>
+      <p>
+        Organiza, prioriza y visualiza el progreso
+        de tu trabajo.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="loadTasks()"
+        [disabled]="loading() || movingTaskId() !== null"
+      >
+        <mat-icon>refresh</mat-icon>
+        Actualizar
+      </button>
+
+      <button
+        mat-flat-button
+        type="button"
+        class="new-task-button"
+        (click)="showCreateForm.set(!showCreateForm())"
+      >
+        <mat-icon>
+          {{ showCreateForm() ? 'close' : 'add' }}
+        </mat-icon>
+        {{ showCreateForm() ? 'Cerrar' : 'Nueva tarea' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- INDICADORES -->
+
+  <section class="stats-grid">
+
+    <mat-card class="stat-card">
+      <div class="stat-top">
+        <span>Total de tareas</span>
+        <div class="stat-icon total">
+          <mat-icon>assignment</mat-icon>
         </div>
+      </div>
+      <strong>{{ tasks().length }}</strong>
+      <small>Tareas registradas</small>
+    </mat-card>
 
-        <div class="header-actions">
-            <button mat-stroked-button type="button" (click)="loadTasks()" [disabled]="loading() || loggingOut()">
-                <mat-icon>refresh</mat-icon>
-                Actualizar
+    <mat-card class="stat-card">
+      <div class="stat-top">
+        <span>Pendientes</span>
+        <div class="stat-icon pending">
+          <mat-icon>schedule</mat-icon>
+        </div>
+      </div>
+      <strong>{{ pendingCount() }}</strong>
+      <small>Por comenzar</small>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-top">
+        <span>En progreso</span>
+        <div class="stat-icon progress">
+          <mat-icon>autorenew</mat-icon>
+        </div>
+      </div>
+      <strong>{{ inProgressCount() }}</strong>
+      <small>En desarrollo</small>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-top">
+        <span>Completadas</span>
+        <div class="stat-icon completed">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+      </div>
+      <strong>{{ completedCount() }}</strong>
+      <small>Finalizadas</small>
+    </mat-card>
+
+  </section>
+
+  <!-- FORMULARIO DE CREACIÓN -->
+
+  @if (showCreateForm()) {
+    <mat-card class="create-card">
+      <mat-card-header>
+        <mat-card-title>
+          Crear nueva tarea
+        </mat-card-title>
+        <mat-card-subtitle>
+          Las tareas nuevas comienzan en Pendiente.
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form
+          #taskForm="ngForm"
+          (ngSubmit)="createTask(taskForm)"
+        >
+          <div class="create-fields">
+            <mat-form-field appearance="outline">
+              <mat-label>Título</mat-label>
+              <input
+                matInput
+                name="title"
+                [(ngModel)]="newTask.title"
+                placeholder="¿Qué necesitas hacer?"
+                required
+                minlength="3"
+                maxlength="100"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Descripción (opcional)</mat-label>
+              <textarea
+                matInput
+                name="description"
+                [(ngModel)]="newTask.description"
+                placeholder="Añade los detalles..."
+                maxlength="500"
+                rows="2"
+              ></textarea>
+            </mat-form-field>
+          </div>
+
+          <div class="create-actions">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="showCreateForm.set(false)"
+            >
+              Cancelar
             </button>
 
-            <button mat-stroked-button type="button" (click)="logout()" [disabled]="loggingOut()">
-                <mat-icon>logout</mat-icon>
-                {{ loggingOut() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+            <button
+              mat-flat-button
+              type="submit"
+              [disabled]="taskForm.invalid || creating()"
+            >
+              <mat-icon>add</mat-icon>
+              {{ creating() ? 'Guardando...' : 'Crear tarea' }}
             </button>
-        </div>
-    </header>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
 
+  <!-- CONTROLES -->
 
-    <section class="stats">
-        <mat-card>
-            <span>Total de tareas</span>
-            <strong>{{ tasks().length }}</strong>
-        </mat-card>
+  <section class="board-toolbar">
+    <div class="toolbar-top">
+      <div class="toolbar-title">
+        <h2>Tablero de trabajo</h2>
+        <p>Gestiona tus tareas de forma visual.</p>
+      </div>
 
-        <mat-card>
-            <span>Pendientes</span>
-            <strong>{{ pendingCount() }}</strong>
-        </mat-card>
+      <mat-button-toggle-group
+        class="view-switch"
+        [value]="viewMode()"
+        (change)="viewMode.set($event.value)"
+        aria-label="Vista de tareas"
+      >
+        <mat-button-toggle value="kanban">
+          <mat-icon>view_kanban</mat-icon>
+          Kanban
+        </mat-button-toggle>
 
-        <mat-card>
-            <span>Completadas</span>
-            <strong>{{ completedCount() }}</strong>
-        </mat-card>
-    </section>
+        <mat-button-toggle value="list">
+          <mat-icon>view_list</mat-icon>
+          Lista
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
 
-    <section class="content-grid">
+    <div class="toolbar-controls">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="search-field"
+      >
+        <mat-label>Buscar tareas</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input
+          matInput
+          type="search"
+          placeholder="Título o descripción"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+      </mat-form-field>
 
-        <mat-card class="create-card">
-            <mat-card-header>
-                <mat-card-title>Nueva tarea</mat-card-title>
-                <mat-card-subtitle>Añade algo a tu lista de trabajo</mat-card-subtitle>
-            </mat-card-header>
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="sort-field"
+      >
+        <mat-label>Ordenar por</mat-label>
+        <mat-select
+          [value]="sortBy()"
+          (valueChange)="sortBy.set($event)"
+        >
+          <mat-option value="newest">
+            Más recientes
+          </mat-option>
+          <mat-option value="oldest">
+            Más antiguas
+          </mat-option>
+          <mat-option value="title">
+            Título (A-Z)
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </section>
 
-            <mat-card-content>
-                <form (ngSubmit)="createTask(taskForm)" #taskForm="ngForm">
+  <!-- ESTADOS GENERALES -->
 
-                    <mat-form-field appearance="outline">
-                        <mat-label>Título de la tarea</mat-label>
-                        <input matInput name="title" [(ngModel)]="newTask.title" required minlength="3"
-                            maxlength="100" />
-                    </mat-form-field>
+  @if (error()) {
+    <div class="error-message" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      {{ error() }}
+    </div>
+  }
 
-                    <mat-form-field appearance="outline">
-                        <mat-label>Descripción</mat-label>
-                        <textarea matInput name="description" [(ngModel)]="newTask.description" maxlength="500"
-                            rows="4"></textarea>
-                    </mat-form-field>
+  @if (loading()) {
+    <div class="loading-state" role="status">
+      <mat-icon>sync</mat-icon>
+      <p>Cargando tareas...</p>
+    </div>
+  }
 
-                    <button mat-flat-button type="submit" [disabled]="taskForm.invalid || creating()">
-                        <mat-icon>add</mat-icon>
-                        {{ creating() ? 'Guardando...' : 'Crear tarea' }}
+  <!-- KANBAN -->
+
+  @if (!loading() && viewMode() === 'kanban') {
+
+    <section
+      class="kanban-board"
+      aria-label="Tablero Kanban"
+    >
+      <div class="kanban-grid">
+
+        <!-- PENDIENTES -->
+
+        <div class="kanban-column pending-column">
+          <div class="column-header">
+            <div class="column-heading">
+              <span class="column-dot pending-dot"></span>
+              <h3>Pendiente</h3>
+              <span class="column-count">
+                {{ pendingTasks().length }}
+              </span>
+            </div>
+
+            <button
+              mat-icon-button
+              type="button"
+              aria-label="Crear tarea"
+              (click)="showCreateForm.set(true)"
+            >
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+
+          <div
+            id="pending-drop"
+            cdkDropList
+            [cdkDropListData]="pendingTasks()"
+            [cdkDropListConnectedTo]="[
+              'in-progress-drop',
+              'completed-drop'
+            ]"
+            (cdkDropListDropped)="dropTask($event, 'pending')"
+            class="column-content"
+          >
+            @for (task of pendingTasks(); track task.id) {
+              <article
+                class="kanban-card"
+                cdkDrag
+                [cdkDragData]="task"
+                [cdkDragDisabled]="movingTaskId() !== null"
+              >
+                <div class="card-top">
+                  <span class="task-status pending-status">
+                    Pendiente
+                  </span>
+
+                  <button
+                    type="button"
+                    class="drag-handle"
+                    cdkDragHandle
+                    aria-label="Arrastrar tarea"
+                  >
+                    <mat-icon>drag_indicator</mat-icon>
+                  </button>
+                </div>
+
+                <h4>{{ task.title }}</h4>
+                <p>
+                  {{ task.description || 'Sin descripción' }}
+                </p>
+
+                <div class="card-footer">
+                  <span class="task-id">
+                    #{{ task.id }}
+                  </span>
+
+                  <div class="card-actions">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Editar ' + task.title"
+                      (click)="editTask(task)"
+                    >
+                      <mat-icon>edit_outline</mat-icon>
                     </button>
-                </form>
-            </mat-card-content>
-        </mat-card>
 
-        <mat-card class="task-list-card">
-            <mat-card-header>
-                <mat-card-title>Listado de tareas</mat-card-title>
-                <mat-card-subtitle>Gestiona tus tareas pendientes y completadas</mat-card-subtitle>
-            </mat-card-header>
-
-            <div class="task-filters">
-                <mat-button-toggle-group [value]="filter()" (change)="filter.set($event.value)"
-                    aria-label="Filtrar tareas">
-                    <mat-button-toggle value="all">
-                        Todas
-                    </mat-button-toggle>
-
-                    <mat-button-toggle value="pending">
-                        Pendientes
-                    </mat-button-toggle>
-
-                    <mat-button-toggle value="completed">
-                        Completadas
-                    </mat-button-toggle>
-                </mat-button-toggle-group>
-
-            </div>
-
-            <div class="task-toolbar">
-
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Buscar tareas</mat-label>
-
-                    <mat-icon matPrefix>search</mat-icon>
-
-                    <input matInput type="search" placeholder="Buscar por título o descripción" [ngModel]="searchTerm()"
-                        (ngModelChange)="searchTerm.set($event)" />
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Ordenar por</mat-label>
-
-                    <mat-select [value]="sortBy()" (valueChange)="sortBy.set($event)">
-                        <mat-option value="newest">Más recientes</mat-option>
-                        <mat-option value="oldest">Más antiguas</mat-option>
-                        <mat-option value="title">Título (A-Z)</mat-option>
-                    </mat-select>
-                </mat-form-field>
-
-            </div>
-
-            <mat-card-content>
-
-                @if (loading()) {
-                <p>Cargando tareas...</p>
-                }
-
-                @if (error()) {
-                <p class="error">{{ error() }}</p>
-                }
-
-                @if (!loading() && !error() && filteredTasks().length === 0) {
-                <div class="empty-state">
-                    <mat-icon>task_alt</mat-icon>
-                    <h3>No hay tareas</h3>
-                    <p>No hay tareas que coincidan con este filtro.</p>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Eliminar ' + task.title"
+                      [disabled]="deletingTaskId() === task.id"
+                      (click)="deleteTask(task)"
+                    >
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
                 </div>
-                }
+              </article>
+            }
 
-                <div class="task-list">
-                    @for (task of filteredTasks(); track task.id) {
-                    <div class="task-item" [class.completed]="task.isCompleted">
+            @if (pendingTasks().length === 0) {
+              <div class="column-empty">
+                <mat-icon>inbox</mat-icon>
+                <span>Sin tareas pendientes</span>
+              </div>
+            }
+          </div>
+        </div>
 
-                        <mat-checkbox [checked]="task.isCompleted" (change)="toggleTask(task)"></mat-checkbox>
+        <!-- EN PROGRESO -->
 
-                        <div class="task-info">
-                            <h3>{{ task.title }}</h3>
-                            <p>{{ task.description || 'Sin descripción' }}</p>
-                        </div>
+        <div class="kanban-column progress-column">
+          <div class="column-header">
+            <div class="column-heading">
+              <span class="column-dot progress-dot"></span>
+              <h3>En progreso</h3>
+              <span class="column-count">
+                {{ inProgressTasks().length }}
+              </span>
+            </div>
+          </div>
 
-                        <button mat-icon-button type="button" aria-label="Editar tarea" (click)="editTask(task)">
-                            <mat-icon>edit_outline</mat-icon>
-                        </button>
+          <div
+            id="in-progress-drop"
+            cdkDropList
+            [cdkDropListData]="inProgressTasks()"
+            [cdkDropListConnectedTo]="[
+              'pending-drop',
+              'completed-drop'
+            ]"
+            (cdkDropListDropped)="dropTask($event, 'in_progress')"
+            class="column-content"
+          >
+            @for (task of inProgressTasks(); track task.id) {
+              <article
+                class="kanban-card"
+                cdkDrag
+                [cdkDragData]="task"
+                [cdkDragDisabled]="movingTaskId() !== null"
+              >
+                <div class="card-top">
+                  <span class="task-status progress-status">
+                    En progreso
+                  </span>
 
-                        <button mat-icon-button type="button" aria-label="Eliminar tarea"
-                            [disabled]="deletingTaskId() === task.id" (click)="deleteTask(task)">
-                            <mat-icon>delete_outline</mat-icon>
-                        </button>
-
-                    </div>
-                    }
+                  <button
+                    type="button"
+                    class="drag-handle"
+                    cdkDragHandle
+                    aria-label="Arrastrar tarea"
+                  >
+                    <mat-icon>drag_indicator</mat-icon>
+                  </button>
                 </div>
 
-            </mat-card-content>
-        </mat-card>
+                <h4>{{ task.title }}</h4>
+                <p>
+                  {{ task.description || 'Sin descripción' }}
+                </p>
 
+                <div class="card-footer">
+                  <span class="task-id">
+                    #{{ task.id }}
+                  </span>
+
+                  <div class="card-actions">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Editar ' + task.title"
+                      (click)="editTask(task)"
+                    >
+                      <mat-icon>edit_outline</mat-icon>
+                    </button>
+
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Eliminar ' + task.title"
+                      [disabled]="deletingTaskId() === task.id"
+                      (click)="deleteTask(task)"
+                    >
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </article>
+            }
+
+            @if (inProgressTasks().length === 0) {
+              <div class="column-empty">
+                <mat-icon>autorenew</mat-icon>
+                <span>Sin tareas en progreso</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- COMPLETADAS -->
+
+        <div class="kanban-column completed-column">
+          <div class="column-header">
+            <div class="column-heading">
+              <span class="column-dot completed-dot"></span>
+              <h3>Completada</h3>
+              <span class="column-count">
+                {{ completedTasks().length }}
+              </span>
+            </div>
+          </div>
+
+          <div
+            id="completed-drop"
+            cdkDropList
+            [cdkDropListData]="completedTasks()"
+            [cdkDropListConnectedTo]="[
+              'pending-drop',
+              'in-progress-drop'
+            ]"
+            (cdkDropListDropped)="dropTask($event, 'completed')"
+            class="column-content"
+          >
+            @for (task of completedTasks(); track task.id) {
+              <article
+                class="kanban-card"
+                cdkDrag
+                [cdkDragData]="task"
+                [cdkDragDisabled]="movingTaskId() !== null"
+              >
+                <div class="card-top">
+                  <span class="task-status completed-status">
+                    Completada
+                  </span>
+
+                  <button
+                    type="button"
+                    class="drag-handle"
+                    cdkDragHandle
+                    aria-label="Arrastrar tarea"
+                  >
+                    <mat-icon>drag_indicator</mat-icon>
+                  </button>
+                </div>
+
+                <h4>{{ task.title }}</h4>
+                <p>
+                  {{ task.description || 'Sin descripción' }}
+                </p>
+
+                <div class="card-footer">
+                  <span class="task-id">
+                    #{{ task.id }}
+                  </span>
+
+                  <div class="card-actions">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Editar ' + task.title"
+                      (click)="editTask(task)"
+                    >
+                      <mat-icon>edit_outline</mat-icon>
+                    </button>
+
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [attr.aria-label]="'Eliminar ' + task.title"
+                      [disabled]="deletingTaskId() === task.id"
+                      (click)="deleteTask(task)"
+                    >
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </article>
+            }
+
+            @if (completedTasks().length === 0) {
+              <div class="column-empty">
+                <mat-icon>task_alt</mat-icon>
+                <span>Sin tareas completadas</span>
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
     </section>
+  }
+
+  <!-- VISTA LISTA -->
+
+  @if (!loading() && viewMode() === 'list') {
+
+    <mat-card class="list-card">
+
+      <div class="list-header">
+        <h3>Listado de tareas</h3>
+
+        <span class="list-count">
+          {{ filteredTasks().length }} tareas
+        </span>
+      </div>
+
+      <div class="list-filters">
+        <mat-button-toggle-group
+          [value]="filter()"
+          (change)="filter.set($event.value)"
+          aria-label="Filtrar tareas"
+        >
+          <mat-button-toggle value="all">
+            Todas
+          </mat-button-toggle>
+
+          <mat-button-toggle value="pending">
+            Pendientes
+          </mat-button-toggle>
+
+          <mat-button-toggle value="in_progress">
+            En progreso
+          </mat-button-toggle>
+
+          <mat-button-toggle value="completed">
+            Completadas
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+
+      <div class="task-list">
+
+        @for (task of filteredTasks(); track task.id) {
+          <article
+            class="task-row"
+            [class.is-completed]="task.status === 'completed'"
+          >
+            <mat-checkbox
+              [checked]="task.status === 'completed'"
+              [disabled]="movingTaskId() !== null"
+              [attr.aria-label]="'Cambiar estado de ' + task.title"
+              (change)="toggleTask(task)"
+            ></mat-checkbox>
+
+            <div class="row-content">
+              <h4>{{ task.title }}</h4>
+              <p>
+                {{ task.description || 'Sin descripción' }}
+              </p>
+            </div>
+
+            <span
+              class="task-status"
+              [class.pending-status]="task.status === 'pending'"
+              [class.progress-status]="task.status === 'in_progress'"
+              [class.completed-status]="task.status === 'completed'"
+            >
+              {{ statusLabel(task.status) }}
+            </span>
+
+            <div class="row-actions">
+              <button
+                mat-icon-button
+                type="button"
+                [attr.aria-label]="'Editar ' + task.title"
+                (click)="editTask(task)"
+              >
+                <mat-icon>edit_outline</mat-icon>
+              </button>
+
+              <button
+                mat-icon-button
+                type="button"
+                [attr.aria-label]="'Eliminar ' + task.title"
+                [disabled]="deletingTaskId() === task.id"
+                (click)="deleteTask(task)"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </article>
+        }
+
+        @if (filteredTasks().length === 0) {
+          <div class="list-empty">
+            <mat-icon>search_off</mat-icon>
+            <h3>No hay tareas</h3>
+            <p>
+              Prueba otra búsqueda o cambia el filtro.
+            </p>
+          </div>
+        }
+
+      </div>
+
+    </mat-card>
+  }
+
 </div>
