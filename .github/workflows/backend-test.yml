@@ -1,4 +1,3 @@
-
 name: Backend Tests
 
 on:
@@ -11,18 +10,23 @@ jobs:
   test:
     name: .NET 10 Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Base efímera de CI. No es la contraseña del PostgreSQL local ni de producción.
+    env:
+      TASKFLOW_TEST_POSTGRES: 'Host=localhost;Port=5432;Database=postgres;Username=devuser;Password=ci-taskflow-only-2026'
 
     services:
       postgres:
         image: postgres:16
         env:
           POSTGRES_USER: devuser
-          POSTGRES_PASSWORD: devpassword123
-          POSTGRES_DB: taskmanager_refresh_tests
+          POSTGRES_PASSWORD: ci-taskflow-only-2026
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U devuser -d taskmanager_refresh_tests"
+          --health-cmd "pg_isready -U devuser -d postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
