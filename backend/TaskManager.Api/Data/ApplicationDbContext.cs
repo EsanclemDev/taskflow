@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +20,6 @@ public class ApplicationDbContext :
     public DbSet<RefreshSession> RefreshSessions
         => Set<RefreshSession>();
 
-    // Almacenamiento persistente de claves de Data Protection
     public DbSet<DataProtectionKey> DataProtectionKeys
         => Set<DataProtectionKey>();
 
@@ -29,14 +27,62 @@ public class ApplicationDbContext :
     {
         base.OnModelCreating(builder);
 
-        // Relación entre tareas y usuarios
-        builder.Entity<TaskItem>()
-            .HasOne(task => task.User)
-            .WithMany()
-            .HasForeignKey(task => task.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<TaskItem>(entity =>
+        {
+            entity.HasOne(task => task.User)
+                .WithMany()
+                .HasForeignKey(task => task.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        // Configuración de sesiones
+            entity.Property(task => task.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue(TaskWorkflowStatus.Pending)
+                .IsRequired();
+
+            entity.Property(task => task.Priority)
+                .HasMaxLength(10)
+                .HasDefaultValue(TaskPriority.Medium)
+                .IsRequired();
+
+            entity.Property(task => task.Category)
+                .HasMaxLength(20)
+                .HasDefaultValue(TaskCategory.Other)
+                .IsRequired();
+
+            entity.Property(task => task.DueDate)
+                .HasColumnType("date");
+
+            entity.Property(task => task.UpdatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .IsRequired();
+
+            entity.HasOne(task => task.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(task => task.CreatedByUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(task => task.AssignedToUser)
+                .WithMany()
+                .HasForeignKey(task => task.AssignedToUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(task => task.CreatedByUserId);
+            entity.HasIndex(task => task.AssignedToUserId);
+            entity.HasIndex(task => task.DueDate);
+        });
+
+        builder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(user => user.IsDemo)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            entity.HasIndex(user => user.DemoExpiresAt);
+        });
+
+        // Se conserva sin cambios la configuraciÃ³n de sesiones.
         builder.Entity<RefreshSession>(entity =>
         {
             entity.HasKey(session => session.Id);
@@ -65,5 +111,4 @@ public class ApplicationDbContext :
             entity.HasIndex(session => session.FamilyId);
         });
     }
-
 }

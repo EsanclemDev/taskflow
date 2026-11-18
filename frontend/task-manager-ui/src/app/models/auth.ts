@@ -1,4 +1,3 @@
-
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -20,4 +19,8 @@ export interface CurrentUser {
   id: string;
   email: string;
   createdAt: string;
+
+  // Usuario de demostración
+  isDemo: boolean;
+  demoExpiresAt: string | null;
 }

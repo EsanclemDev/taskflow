@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { EditTaskDialog } from './edit-task-dialog';
+import { Statistics } from './statistics';
 
-describe('EditTaskDialog', () => {
-  let component: EditTaskDialog;
-  let fixture: ComponentFixture<EditTaskDialog>;
+describe('Statistics', () => {
+  let component: Statistics;
+  let fixture: ComponentFixture<Statistics>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditTaskDialog],
+      imports: [Statistics],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EditTaskDialog);
+    fixture = TestBed.createComponent(Statistics);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

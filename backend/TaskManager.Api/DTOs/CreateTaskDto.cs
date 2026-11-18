@@ -10,4 +10,16 @@ public class CreateTaskDto
 
     [StringLength(500)]
     public string? Description { get; set; }
+
+    [RegularExpression(
+        @"^(low|medium|high|urgent)$",
+        ErrorMessage = "La prioridad de la tarea no es válida.")]
+    public string? Priority { get; set; }
+
+    [RegularExpression(
+        @"^(frontend|backend|database|documentation|other)$",
+        ErrorMessage = "La categoría de la tarea no es válida.")]
+    public string? Category { get; set; }
+
+    public DateOnly? DueDate { get; set; }
 }

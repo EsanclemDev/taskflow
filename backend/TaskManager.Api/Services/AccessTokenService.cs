@@ -1,4 +1,4 @@
-﻿
+
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.BearerToken;
@@ -11,6 +11,7 @@ namespace TaskManager.Api.Services;
 public class AccessTokenService
 {
     public const string FamilyIdClaim = "taskflow:family_id";
+    public const string DemoExpiresClaim = "taskflow:demo_expires";
 
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IOptionsMonitor<BearerTokenOptions> _bearerOptions;
@@ -37,6 +38,15 @@ public class AccessTokenService
         identity.AddClaim(new Claim(
             FamilyIdClaim,
             familyId.ToString("D")));
+
+        if (user.IsDemo && user.DemoExpiresAt.HasValue)
+        {
+            var expires = new DateTimeOffset(user.DemoExpiresAt.Value)
+                .ToUnixTimeSeconds();
+            identity.AddClaim(new Claim(
+                DemoExpiresClaim,
+                expires.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
 
         var principal = new ClaimsPrincipal(identity);
 

@@ -71,3 +71,19 @@
     font-size: 13px;
   }
 }
+
+
+.demo-access {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+
+  p { margin: 0 0 10px; }
+  small { display: block; margin-top: 8px; color: #64748b; }
+  .demo-button {
+    width: 100%;
+    margin-top: 0;
+    background: #0f172a;
+  }
+}

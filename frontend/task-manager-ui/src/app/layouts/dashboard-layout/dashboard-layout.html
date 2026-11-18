@@ -1,8 +1,24 @@
 
-<div class="app-layout">
+<div
+  class="app-layout"
+  [class.sidebar-collapsed]="sidebarCollapsed()"
+  [class.mobile-menu-open]="mobileMenuOpen()"
+>
 
-  <!-- BARRA LATERAL -->
-  <aside class="sidebar">
+  @if (mobileMenuOpen()) {
+    <button
+      type="button"
+      class="mobile-backdrop"
+      aria-label="Cerrar menú lateral"
+      (click)="closeMobileMenu()"
+    ></button>
+  }
+
+  <aside
+    class="sidebar"
+    id="taskflow-sidebar"
+    aria-label="Menú lateral"
+  >
 
     <div class="brand">
       <div class="brand-icon">
@@ -13,53 +29,222 @@
         <strong>TaskFlow</strong>
         <span>Workspace</span>
       </div>
+
+      <button
+        type="button"
+        class="mobile-close"
+        aria-label="Cerrar menú"
+        (click)="closeMobileMenu()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
     </div>
 
     <div class="sidebar-section">
       <span class="section-label">WORKSPACE</span>
 
-      <nav class="navigation">
+      <nav class="navigation" aria-label="Navegación principal">
+
         <a
           routerLink="/"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
+          title="Dashboard"
+          (click)="closeMobileMenu()"
         >
           <mat-icon>dashboard</mat-icon>
           <span>Dashboard</span>
         </a>
+
+        <a
+          routerLink="/tasks"
+          routerLinkActive="active"
+          title="Mis tareas"
+          (click)="closeMobileMenu()"
+        >
+          <mat-icon>checklist</mat-icon>
+          <span>Mis tareas</span>
+        </a>
+
+        <a
+          routerLink="/statistics"
+          routerLinkActive="active"
+          title="Estadísticas"
+          (click)="closeMobileMenu()"
+        >
+          <mat-icon>bar_chart</mat-icon>
+          <span>Estadísticas</span>
+        </a>
+
       </nav>
     </div>
 
     <div class="sidebar-bottom">
-      <div class="workspace-avatar">TF</div>
+
+      <div class="workspace-avatar">
+        {{ userInitial() }}
+      </div>
 
       <div class="workspace-info">
         <strong>Mi espacio</strong>
         <span>Personal workspace</span>
       </div>
+
+      <button
+        type="button"
+        class="sidebar-toggle"
+        [attr.aria-label]="
+          sidebarCollapsed()
+            ? 'Expandir menú lateral'
+            : 'Contraer menú lateral'
+        "
+        [attr.aria-expanded]="!sidebarCollapsed()"
+        (click)="toggleSidebar()"
+      >
+        <mat-icon>
+          {{ sidebarCollapsed()
+            ? 'keyboard_double_arrow_right'
+            : 'keyboard_double_arrow_left' }}
+        </mat-icon>
+      </button>
+
     </div>
 
   </aside>
 
-  <!-- CONTENIDO -->
   <div class="main-layout">
 
     <header class="topbar">
-      <div class="breadcrumb">
-        <span>Workspace</span>
-        <mat-icon>chevron_right</mat-icon>
-        <strong>Dashboard</strong>
+
+      <div class="topbar-left">
+
+        <button
+          type="button"
+          class="mobile-menu-button"
+          aria-label="Abrir menú lateral"
+          aria-controls="taskflow-sidebar"
+          [attr.aria-expanded]="mobileMenuOpen()"
+          (click)="toggleMobileMenu()"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+
+        <nav class="breadcrumb" aria-label="Ruta de navegación">
+
+          @if (currentPath() === '/') {
+            <span class="breadcrumb-current" aria-current="page">
+              Dashboard
+            </span>
+          } @else {
+            <a routerLink="/">
+              Dashboard
+            </a>
+
+            <mat-icon>chevron_right</mat-icon>
+
+            <span class="breadcrumb-current" aria-current="page">
+              {{ currentPage() }}
+            </span>
+          }
+
+        </nav>
+
       </div>
 
       <div class="topbar-right">
-        <span class="status-dot"></span>
-        <span>TaskFlow</span>
+
+        <div class="user-menu-container">
+
+          <button
+            type="button"
+            class="user-button"
+            aria-label="Menú de usuario"
+            aria-haspopup="true"
+            [attr.aria-expanded]="userMenuOpen()"
+            (click)="toggleUserMenu()"
+          >
+            <div class="user-avatar">
+              {{ userInitial() }}
+            </div>
+
+            <div class="user-details">
+              <strong>
+                @if (userLoading()) {
+                  Cargando...
+                } @else {
+                  {{ currentUser()?.email ?? 'Usuario' }}
+                }
+              </strong>
+              <span>{{ currentUser()?.isDemo ? 'Modo demo' : 'Mi cuenta' }}</span>
+            </div>
+
+            <mat-icon class="user-chevron">
+              expand_more
+            </mat-icon>
+          </button>
+
+          @if (userMenuOpen()) {
+            <div class="user-dropdown">
+
+              <div class="dropdown-user">
+                <span>Sesión iniciada como</span>
+                <strong>
+                  {{ currentUser()?.email ?? 'Usuario' }}
+                </strong>
+              </div>
+
+              @if (currentUser()?.isDemo) {
+                <div class="demo-user-note">Cuenta temporal · 24 horas</div>
+                <button
+                  type="button"
+                  class="demo-reset-button"
+                  [disabled]="resettingDemo()"
+                  (click)="resetDemo()"
+                >
+                  <mat-icon>restart_alt</mat-icon>
+                  {{ resettingDemo() ? 'Restableciendo...' : 'Restablecer demo' }}
+                </button>
+                @if (demoError()) {
+                  <p class="demo-reset-error" role="alert">{{ demoError() }}</p>
+                }
+              }
+
+              <div class="dropdown-divider"></div>
+
+              <button
+                type="button"
+                class="logout-button"
+                [disabled]="loggingOut()"
+                (click)="logout()"
+              >
+                <mat-icon>logout</mat-icon>
+                <span>
+                  {{ loggingOut()
+                    ? 'Cerrando sesión...'
+                    : 'Cerrar sesión' }}
+                </span>
+              </button>
+
+            </div>
+          }
+
+        </div>
+
       </div>
+
     </header>
+
+    @if (currentUser()?.isDemo) {
+      <div class="demo-banner" role="status">
+        <mat-icon>science</mat-icon>
+        Modo demostración: los cambios son privados y temporales.
+      </div>
+    }
 
     <main class="page-content">
       <router-outlet />
     </main>
 
   </div>
+
 </div>

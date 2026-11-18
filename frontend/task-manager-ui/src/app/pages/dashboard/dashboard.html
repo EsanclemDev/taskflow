@@ -1,0 +1,191 @@
+<section class="dashboard-page">
+
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">MI ESPACIO DE TRABAJO</span>
+      <h1>Dashboard</h1>
+      <p>Consulta tu actividad y organiza tus próximas tareas.</p>
+    </div>
+
+    <a routerLink="/tasks" class="primary-link">
+      <mat-icon>add</mat-icon>
+      Gestionar tareas
+    </a>
+  </header>
+
+  @if (loading()) {
+    <div class="state-panel" role="status">
+      Cargando información...
+    </div>
+  } @else if (error()) {
+    <div class="state-panel error-panel" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" (click)="loadTasks()">
+        Reintentar
+      </button>
+    </div>
+  } @else {
+
+    <div class="metrics-grid">
+
+      <article class="metric-card">
+        <span>Total de tareas</span>
+        <div class="metric-value">
+          <strong>{{ metrics().total }}</strong>
+          <mat-icon>assignment</mat-icon>
+        </div>
+        <small>Tareas de tu espacio</small>
+      </article>
+
+      <article class="metric-card">
+        <span>Pendientes</span>
+        <div class="metric-value">
+          <strong>{{ metrics().pending }}</strong>
+          <mat-icon class="pending-icon">schedule</mat-icon>
+        </div>
+        <small>Por comenzar</small>
+      </article>
+
+      <article class="metric-card">
+        <span>En progreso</span>
+        <div class="metric-value">
+          <strong>{{ metrics().inProgress }}</strong>
+          <mat-icon class="in-progress-icon">autorenew</mat-icon>
+        </div>
+        <small>En desarrollo</small>
+      </article>
+
+      <article class="metric-card">
+        <span>Completadas</span>
+        <div class="metric-value">
+          <strong>{{ metrics().completed }}</strong>
+          <mat-icon class="completed-icon">check_circle</mat-icon>
+        </div>
+        <small>Tareas finalizadas</small>
+      </article>
+
+      <article class="metric-card">
+        <span>Progreso</span>
+        <div class="metric-value">
+          <strong>{{ metrics().completionRate }}%</strong>
+          <mat-icon class="progress-icon">trending_up</mat-icon>
+        </div>
+        <small>Porcentaje completado</small>
+      </article>
+
+    </div>
+
+    <div class="content-grid">
+
+      <section class="content-card progress-card">
+        <div class="card-heading">
+          <div>
+            <h2>Progreso general</h2>
+            <p>Estado actual de tus tareas</p>
+          </div>
+          <mat-icon>donut_large</mat-icon>
+        </div>
+
+        <div class="progress-number">
+          {{ metrics().completionRate }}%
+        </div>
+
+        <div
+          class="progress-track"
+          role="progressbar"
+          [attr.aria-valuenow]="metrics().completionRate"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Porcentaje de tareas completadas"
+        >
+          <div
+            class="progress-fill"
+            [style.width.%]="metrics().completionRate"
+          ></div>
+        </div>
+
+        <div class="progress-footer">
+          <span class="footer-pending">
+            {{ metrics().pending }} pendientes
+          </span>
+          <span class="footer-in-progress">
+            {{ metrics().inProgress }} en progreso
+          </span>
+          <span class="footer-completed">
+            {{ metrics().completed }} completadas
+          </span>
+        </div>
+      </section>
+
+      <section class="content-card">
+        <div class="card-heading">
+          <div>
+            <h2>Tareas recientes</h2>
+            <p>Últimas tareas creadas</p>
+          </div>
+          <a routerLink="/tasks" class="text-link">Ver todas</a>
+        </div>
+
+        @if (recentTasks().length === 0) {
+          <div class="empty-state">
+            <mat-icon>inbox</mat-icon>
+            <p>Todavía no tienes tareas.</p>
+            <a routerLink="/tasks">Crear mi primera tarea</a>
+          </div>
+        } @else {
+          <div class="recent-list">
+            @for (task of recentTasks(); track task.id) {
+              <div class="recent-task">
+                <mat-icon
+                  [class.pending]="task.status === 'pending'"
+                  [class.in-progress]="task.status === 'in_progress'"
+                  [class.done]="task.status === 'completed'"
+                >
+                  {{ task.status === 'completed'
+                    ? 'check_circle'
+                    : task.status === 'in_progress'
+                      ? 'autorenew'
+                      : 'radio_button_unchecked' }}
+                </mat-icon>
+
+                <div class="task-info">
+                  <strong>{{ task.title }}</strong>
+                  <small>
+                    {{ task.createdAt | date:'dd/MM/yyyy' }}
+                  </small>
+                </div>
+
+                <span
+                  class="task-status"
+                  [class.pending]="task.status === 'pending'"
+                  [class.in-progress]="task.status === 'in_progress'"
+                  [class.completed]="task.status === 'completed'"
+                >
+                  {{ task.status === 'completed'
+                    ? 'Completada'
+                    : task.status === 'in_progress'
+                      ? 'En progreso'
+                      : 'Pendiente' }}
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+    </div>
+
+    <a routerLink="/statistics" class="analytics-link">
+      <div>
+        <mat-icon>bar_chart</mat-icon>
+        <span>
+          <strong>Explorar estadísticas</strong>
+          <small>Consulta los gráficos de tus tareas</small>
+        </span>
+      </div>
+      <mat-icon>arrow_forward</mat-icon>
+    </a>
+
+  }
+
+</section>

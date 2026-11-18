@@ -1,4 +1,4 @@
-﻿
+
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Api.Data;
 using TaskManager.Api.Models;
@@ -7,30 +7,20 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace TaskManager.Api.Tests;
 
-public class RefreshTokenPostgresTests
+public class RefreshTokenPostgresTests : IClassFixture<PostgresTestDatabase>
 {
-    // Base de datos exclusiva de pruebas.
-    // Nunca utilizar taskmanager_beta ni Neon.
-    private const string ConnectionString =
-        "Host=localhost;Port=5432;" +
-        "Database=taskmanager_refresh_tests;" +
-        "Username=devuser;Password=devpassword123";
+    private readonly PostgresTestDatabase _database;
 
-    private static ApplicationDbContext CreateContext()
+    public RefreshTokenPostgresTests(PostgresTestDatabase database)
     {
-        var options =
-            new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseNpgsql(ConnectionString)
-                .Options;
-
-        return new ApplicationDbContext(options);
+        _database = database;
     }
+
+    private ApplicationDbContext CreateContext() => _database.CreateContext();
 
     private static async Task<ApplicationUser> CreateUserAsync(
         ApplicationDbContext context)
     {
-        await context.Database.EnsureCreatedAsync();
-
         var id = Guid.NewGuid().ToString();
         var email = $"refresh-{id}@taskflow.local";
 

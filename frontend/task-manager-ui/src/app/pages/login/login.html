@@ -27,10 +27,22 @@
       <p class="error-message" role="alert">{{ errorMessage() }}</p>
       }
 
-      <button type="submit" [disabled]="loading()">
+      <button type="submit" [disabled]="loading() || demoLoading()">
         {{ loading() ? 'Iniciando sesión...' : 'Entrar' }}
       </button>
     </form>
+    <div class="demo-access">
+      <p>¿Quieres explorar TaskFlow sin registrarte?</p>
+      <button
+        type="button"
+        class="demo-button"
+        [disabled]="loading() || demoLoading()"
+        (click)="startDemo()"
+      >
+        {{ demoLoading() ? 'Preparando demo...' : 'Probar demostración' }}
+      </button>
+      <small>Sesión privada de prueba durante 24 horas.</small>
+    </div>
     <p class="register-link">
       ¿Todavía no tienes cuenta?
       <a routerLink="/register">Regístrate gratis</a>
