@@ -1,4 +1,4 @@
-﻿
+
 using System.ComponentModel.DataAnnotations;
 using TaskManager.Api.DTOs;
 using Xunit;
@@ -101,5 +101,91 @@ public class TaskDtoValidationTests
         };
 
         Assert.NotEmpty(Validate(dto));
+    }
+
+    [Theory]
+    [InlineData("low")]
+    [InlineData("medium")]
+    [InlineData("high")]
+    [InlineData("urgent")]
+    public void CreateTask_WithValidPriority_ShouldPass(string priority)
+    {
+        Assert.Empty(Validate(new CreateTaskDto
+        {
+            Title = "Valid task", Priority = priority
+        }));
+    }
+
+    [Theory]
+    [InlineData("critical")]
+    [InlineData("HIGH")]
+    [InlineData("unknown")]
+    public void CreateTask_WithInvalidPriority_ShouldFail(string priority)
+    {
+        Assert.NotEmpty(Validate(new CreateTaskDto
+        {
+            Title = "Valid task", Priority = priority
+        }));
+    }
+
+    [Theory]
+    [InlineData("frontend")]
+    [InlineData("backend")]
+    [InlineData("database")]
+    [InlineData("documentation")]
+    [InlineData("other")]
+    public void CreateTask_WithValidCategory_ShouldPass(string category)
+    {
+        Assert.Empty(Validate(new CreateTaskDto
+        {
+            Title = "Valid task", Category = category
+        }));
+    }
+
+    [Theory]
+    [InlineData("devops")]
+    [InlineData("BACKEND")]
+    public void CreateTask_WithInvalidCategory_ShouldFail(string category)
+    {
+        Assert.NotEmpty(Validate(new CreateTaskDto
+        {
+            Title = "Valid task", Category = category
+        }));
+    }
+
+    [Fact]
+    public void CreateTask_WithOptionalDueDate_ShouldPass()
+    {
+        Assert.Empty(Validate(new CreateTaskDto
+        {
+            Title = "Valid task", DueDate = new DateOnly(2026, 12, 10)
+        }));
+    }
+
+    [Fact]
+    public void UpdateTask_WithValidDetails_ShouldPass()
+    {
+        Assert.Empty(Validate(new UpdateTaskDto
+        {
+            Title = "Valid task",
+            Status = "in_progress",
+            Priority = "urgent",
+            Category = "database",
+            DueDate = new DateOnly(2026, 12, 10)
+        }));
+    }
+
+    [Theory]
+    [InlineData("done", "high", "backend")]
+    [InlineData("pending", "super", "backend")]
+    [InlineData("pending", "high", "sales")]
+    public void UpdateTask_WithInvalidDetails_ShouldFail(
+        string status, string priority, string category)
+    {
+        Assert.NotEmpty(Validate(new UpdateTaskDto
+        {
+            Title = "Valid task", Status = status,
+            Priority = priority, Category = category
+        }));
     }
 }

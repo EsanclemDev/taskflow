@@ -1,74 +1,66 @@
-
 <h2 mat-dialog-title>Editar tarea</h2>
 
 <mat-dialog-content>
-  <form
-    #editForm="ngForm"
-    (ngSubmit)="save()"
-    id="editTaskForm"
-  >
+  <form #editForm="ngForm" (ngSubmit)="save()" id="editTaskForm">
     <mat-form-field appearance="outline">
       <mat-label>Título</mat-label>
-      <input
-        matInput
-        name="title"
-        [(ngModel)]="form.title"
-        required
-        minlength="3"
-        maxlength="100"
-      />
+      <input matInput name="title" [(ngModel)]="form.title"
+        required minlength="3" maxlength="100" />
     </mat-form-field>
 
     <mat-form-field appearance="outline">
       <mat-label>Descripción</mat-label>
-      <textarea
-        matInput
-        name="description"
-        [(ngModel)]="form.description"
-        maxlength="500"
-        rows="4"
-      ></textarea>
+      <textarea matInput name="description" [(ngModel)]="form.description"
+        maxlength="500" rows="3"></textarea>
     </mat-form-field>
 
     <mat-form-field appearance="outline">
       <mat-label>Estado</mat-label>
-
-      <mat-select
-        name="status"
-        [(ngModel)]="form.status"
-        required
-      >
-        <mat-option value="pending">
-          Pendiente
-        </mat-option>
-
-        <mat-option value="in_progress">
-          En progreso
-        </mat-option>
-
-        <mat-option value="completed">
-          Completada
-        </mat-option>
+      <mat-select name="status" [(ngModel)]="form.status" required>
+        <mat-option value="pending">Pendiente</mat-option>
+        <mat-option value="in_progress">En progreso</mat-option>
+        <mat-option value="completed">Completada</mat-option>
       </mat-select>
     </mat-form-field>
+
+    <div class="dialog-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Prioridad</mat-label>
+        <mat-select name="priority" [(ngModel)]="form.priority" required>
+          <mat-option value="low">Baja</mat-option>
+          <mat-option value="medium">Media</mat-option>
+          <mat-option value="high">Alta</mat-option>
+          <mat-option value="urgent">Urgente</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Categoría</mat-label>
+        <mat-select name="category" [(ngModel)]="form.category" required>
+          <mat-option value="frontend">Frontend</mat-option>
+          <mat-option value="backend">Backend</mat-option>
+          <mat-option value="database">Base de datos</mat-option>
+          <mat-option value="documentation">Documentación</mat-option>
+          <mat-option value="other">Otros</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Fecha límite (opcional)</mat-label>
+      <input matInput type="date" name="dueDate" [(ngModel)]="form.dueDate" />
+      <mat-hint>Deja la fecha vacía para eliminarla</mat-hint>
+    </mat-form-field>
+
+    <div class="assignment-info">
+      <span><strong>Creada por:</strong> {{ task.createdByUserName || 'Usuario actual' }}</span>
+      <span><strong>Asignada a:</strong> {{ task.assignedToUserName || 'Usuario actual' }}</span>
+    </div>
   </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button
-    mat-button
-    type="button"
-    (click)="cancel()"
-  >
-    Cancelar
-  </button>
-
-  <button
-    mat-flat-button
-    type="submit"
-    form="editTaskForm"
-    [disabled]="editForm.invalid"
-  >
-    Guardar cambios
-  </button>
+  <button mat-button type="button" (click)="cancel()">Cancelar</button>
+  <button mat-flat-button type="submit" form="editTaskForm"
+    [disabled]="editForm.invalid">Guardar cambios</button>
 </mat-dialog-actions>

@@ -7,8 +7,18 @@ using Xunit;
 
 namespace TaskManager.Api.Tests;
 
-public class TasksApiIntegrationTests
+public class TasksApiIntegrationTests : IClassFixture<TaskManagerWebApplicationFactory>
 {
+    // Un host y una SQLite en memoria por clase: los tests de xUnit
+    // de la misma clase no se ejecutan en paralelo. Cada test crea
+    // usuarios distintos y mantiene el aislamiento por UserId.
+    private readonly TaskManagerWebApplicationFactory _factory;
+
+    public TasksApiIntegrationTests(TaskManagerWebApplicationFactory factory)
+    {
+        _factory = factory;
+    }
+
     private const string FrontendOrigin = "http://localhost:4200";
     private const string TestPassword = "TaskFlow2026!";
 
@@ -80,7 +90,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task GetTasks_ShouldReturnOk()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
         using var client = factory.CreateHttpsClient();
 
         await AuthenticateAsync(client);
@@ -93,7 +103,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task GetTasks_WithoutAuthentication_ShouldReturnUnauthorized()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
         using var client = factory.CreateHttpsClient();
 
         var response = await client.GetAsync("/api/tasks");
@@ -106,7 +116,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task CreateTask_ShouldReturnSuccess()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
         using var client = factory.CreateHttpsClient();
 
         await AuthenticateAsync(client);
@@ -125,7 +135,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task CreateTask_WithInvalidTitle_ShouldReturnBadRequest()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
         using var client = factory.CreateHttpsClient();
 
         await AuthenticateAsync(client);
@@ -146,7 +156,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task Task_ShouldSupportFullCrudLifecycle()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
         using var client = factory.CreateHttpsClient();
 
         await AuthenticateAsync(client);
@@ -211,7 +221,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task AccessToken_ShouldBeRejectedAfterLogout()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
         using var client = factory.CreateHttpsClient();
 
         SetFrontendOrigin(client);
@@ -253,7 +263,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task AccessToken_ShouldNotCreateTaskAfterLogout()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
         using var client = factory.CreateHttpsClient();
 
         SetFrontendOrigin(client);
@@ -301,7 +311,7 @@ public class TasksApiIntegrationTests
     [Fact]
     public async Task Logout_ShouldNotInvalidateIndependentSession()
     {
-        using var factory = new TaskManagerWebApplicationFactory();
+        var factory = _factory;
 
         using var clientA = factory.CreateHttpsClient();
         using var clientB = factory.CreateHttpsClient();

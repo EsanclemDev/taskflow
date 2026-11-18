@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TaskManager.Api.DTOs;
 using TaskManager.Api.Filters;
 using TaskManager.Api.Models;
@@ -18,19 +19,22 @@ public class AuthController : ControllerBase
     private readonly AccessTokenService _accessTokenService;
     private readonly RefreshTokenService _refreshTokenService;
     private readonly IConfiguration _configuration;
+    private readonly DemoAccountService _demoAccountService;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         AccessTokenService accessTokenService,
         IConfiguration IConfiguration,
-        RefreshTokenService refreshTokenService)
+        RefreshTokenService refreshTokenService,
+        DemoAccountService demoAccountService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _accessTokenService = accessTokenService;
         _refreshTokenService = refreshTokenService;
         _configuration = IConfiguration;
+        _demoAccountService = demoAccountService;
     }
 
     [HttpPost("register")]
@@ -133,6 +137,26 @@ public class AuthController : ControllerBase
         });
     }
 
+    // Sesión de demostración sin registro y con datos aislados.
+    [ValidateAuthOrigin]
+    [EnableRateLimiting("demo-create")]
+    [HttpPost("demo")]
+    public async Task<IActionResult> StartDemo()
+    {
+        var demo = await _demoAccountService.CreateAsync();
+        var accessToken = await _accessTokenService.GenerateAsync(
+            demo.User, demo.FamilyId);
+
+        SetRefreshTokenCookie(demo.RefreshToken);
+
+        return Ok(new
+        {
+            TokenType = "Bearer",
+            AccessToken = accessToken,
+            ExpiresIn = 3600
+        });
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
@@ -146,7 +170,9 @@ public class AuthController : ControllerBase
         {
             Id = user.Id,
             Email = user.Email,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            IsDemo = user.IsDemo,
+            DemoExpiresAt = user.DemoExpiresAt
         });
     }
 
@@ -179,6 +205,9 @@ public class AuthController : ControllerBase
                 );
 
             if (existingUser == null ||
+                (existingUser.IsDemo &&
+                    (!existingUser.DemoExpiresAt.HasValue ||
+                     existingUser.DemoExpiresAt <= DateTime.UtcNow)) ||
                 !await _signInManager.CanSignInAsync(existingUser) ||
                 await _userManager.IsLockedOutAsync(existingUser))
             {
@@ -226,6 +255,9 @@ public class AuthController : ControllerBase
             await _userManager.FindByIdAsync(result.UserId!);
 
         if (user == null ||
+            (user.IsDemo &&
+                (!user.DemoExpiresAt.HasValue ||
+                 user.DemoExpiresAt <= DateTime.UtcNow)) ||
             !await _signInManager.CanSignInAsync(user) ||
             await _userManager.IsLockedOutAsync(user))
         {

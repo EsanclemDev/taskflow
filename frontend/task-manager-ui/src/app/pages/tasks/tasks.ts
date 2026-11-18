@@ -8,7 +8,8 @@ import {
   signal
 } from '@angular/core';
 
-import { FormsModule, NgForm } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   CdkDragDrop,
@@ -29,10 +30,14 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   Task,
   TaskStatus,
+  TaskPriority,
+  TaskCategory,
+  CreateTask,
   UpdateTask
 } from '../../models/task';
 
 import { TaskService } from '../../services/task';
+import { CreateTaskDialog } from '../../components/create-task-dialog/create-task-dialog';
 import { EditTaskDialog } from '../../components/edit-task-dialog/edit-task-dialog';
 import { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog';
 
@@ -45,6 +50,7 @@ type TaskView = 'kanban' | 'list';
   standalone: true,
   imports: [
     FormsModule,
+    DatePipe,
     DragDropModule,
     MatButtonModule,
     MatCardModule,
@@ -74,16 +80,10 @@ export class Tasks implements OnInit {
   readonly movingTaskId = signal<number | null>(null);
 
   readonly viewMode = signal<TaskView>('kanban');
-  readonly showCreateForm = signal(false);
 
   readonly filter = signal<TaskFilter>('all');
   readonly searchTerm = signal('');
   readonly sortBy = signal<TaskSort>('newest');
-
-  newTask = {
-    title: '',
-    description: ''
-  };
 
   // INDICADORES
 
@@ -175,44 +175,48 @@ export class Tasks implements OnInit {
       });
   }
 
-  // CREAR
+  // CREAR EN DIÁLOGO DE ANGULAR MATERIAL
 
-  createTask(form: NgForm): void {
-    const title = this.newTask.title.trim();
-
-    if (title.length < 3 || title.length > 100) {
-      this.error.set(
-        'El título debe tener entre 3 y 100 caracteres.'
-      );
+  openCreateDialog(): void {
+    if (this.creating() || this.dialog.getDialogById('task-create-dialog')) {
       return;
     }
 
-    this.creating.set(true);
-    this.error.set('');
+    const dialogRef = this.dialog.open<
+      CreateTaskDialog,
+      void,
+      CreateTask
+    >(CreateTaskDialog, {
+      id: 'task-create-dialog',
+      width: '560px',
+      maxWidth: '95vw'
+    });
 
-    this.taskService.createTask({
-      title,
-      description: this.newTask.description.trim() || null
-    })
+    dialogRef.afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          form.resetForm({
-            title: '',
-            description: ''
-          });
-
-          this.creating.set(false);
-          this.showCreateForm.set(false);
-          this.loadTasks();
-
-          this.showNotification('Tarea creada correctamente');
-        },
-        error: err => {
-          console.error('Error creating task:', err);
-          this.error.set('No se pudo crear la tarea.');
-          this.creating.set(false);
+      .subscribe(result => {
+        if (!result) {
+          return;
         }
+
+        this.creating.set(true);
+        this.error.set('');
+
+        this.taskService.createTask(result)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.creating.set(false);
+              this.loadTasks();
+              this.showNotification('Tarea creada correctamente');
+            },
+            error: err => {
+              console.error('Error creating task:', err);
+              this.error.set('No se pudo crear la tarea.');
+              this.creating.set(false);
+              this.showNotification('No se pudo crear la tarea');
+            }
+          });
       });
   }
 
@@ -243,6 +247,8 @@ export class Tasks implements OnInit {
       .subscribe({
         next: () => {
           this.movingTaskId.set(null);
+          // Refrescar updatedAt con el valor confirmado por la API.
+          this.loadTasks();
 
           this.showNotification(
             `Tarea movida a ${this.statusLabel(newStatus)}`
@@ -317,7 +323,7 @@ export class Tasks implements OnInit {
       Task,
       UpdateTask
     >(EditTaskDialog, {
-      width: '480px',
+      width: '560px',
       maxWidth: '95vw',
       data: task
     });
@@ -404,6 +410,45 @@ export class Tasks implements OnInit {
       case 'completed':
         return 'Completada';
     }
+  }
+
+  priorityLabel(priority: TaskPriority): string {
+    switch (priority) {
+      case 'low': return 'Baja';
+      case 'medium': return 'Media';
+      case 'high': return 'Alta';
+      case 'urgent': return 'Urgente';
+    }
+  }
+
+  categoryLabel(category: TaskCategory): string {
+    switch (category) {
+      case 'frontend': return 'Frontend';
+      case 'backend': return 'Backend';
+      case 'database': return 'Base de datos';
+      case 'documentation': return 'Documentación';
+      case 'other': return 'Otros';
+    }
+  }
+
+  dueDateLabel(dueDate: string): string {
+    const [year, month, day] = dueDate.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  isOverdue(task: Task): boolean {
+    if (!task.dueDate || task.status === 'completed') {
+      return false;
+    }
+
+    const today = new Date();
+    const localToday = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0')
+    ].join('-');
+
+    return task.dueDate < localToday;
   }
 
   private showNotification(message: string): void {

@@ -21,6 +21,7 @@ export class Login {
 
   readonly loading = signal(false);
   readonly errorMessage = signal('');
+  readonly demoLoading = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -29,8 +30,30 @@ export class Login {
   readonly registeredSuccessfully =
   this.route.snapshot.queryParamMap.get('registered') === '1';
 
+  startDemo(): void {
+    if (this.loading() || this.demoLoading()) return;
+
+    this.demoLoading.set(true);
+    this.errorMessage.set('');
+
+    this.authService.startDemo().subscribe({
+      next: () => {
+        this.demoLoading.set(false);
+        void this.router.navigateByUrl('/');
+      },
+      error: error => {
+        this.demoLoading.set(false);
+        this.errorMessage.set(
+          error.status === 429
+            ? 'Demasiados intentos. Prueba de nuevo dentro de una hora.'
+            : 'No se ha podido iniciar la demostración.'
+        );
+      }
+    });
+  }
+
   onSubmit(): void {
-    if (this.form.invalid || this.loading()) {
+    if (this.form.invalid || this.loading() || this.demoLoading()) {
       this.form.markAllAsTouched();
       return;
     }

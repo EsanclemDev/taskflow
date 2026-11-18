@@ -28,12 +28,11 @@
         mat-flat-button
         type="button"
         class="new-task-button"
-        (click)="showCreateForm.set(!showCreateForm())"
+        (click)="openCreateDialog()"
+        [disabled]="creating()"
       >
-        <mat-icon>
-          {{ showCreateForm() ? 'close' : 'add' }}
-        </mat-icon>
-        {{ showCreateForm() ? 'Cerrar' : 'Nueva tarea' }}
+        <mat-icon>add</mat-icon>
+        {{ creating() ? 'Guardando...' : 'Nueva tarea' }}
       </button>
     </div>
   </header>
@@ -87,74 +86,6 @@
     </mat-card>
 
   </section>
-
-  <!-- FORMULARIO DE CREACIÓN -->
-
-  @if (showCreateForm()) {
-    <mat-card class="create-card">
-      <mat-card-header>
-        <mat-card-title>
-          Crear nueva tarea
-        </mat-card-title>
-        <mat-card-subtitle>
-          Las tareas nuevas comienzan en Pendiente.
-        </mat-card-subtitle>
-      </mat-card-header>
-
-      <mat-card-content>
-        <form
-          #taskForm="ngForm"
-          (ngSubmit)="createTask(taskForm)"
-        >
-          <div class="create-fields">
-            <mat-form-field appearance="outline">
-              <mat-label>Título</mat-label>
-              <input
-                matInput
-                name="title"
-                [(ngModel)]="newTask.title"
-                placeholder="¿Qué necesitas hacer?"
-                required
-                minlength="3"
-                maxlength="100"
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Descripción (opcional)</mat-label>
-              <textarea
-                matInput
-                name="description"
-                [(ngModel)]="newTask.description"
-                placeholder="Añade los detalles..."
-                maxlength="500"
-                rows="2"
-              ></textarea>
-            </mat-form-field>
-          </div>
-
-          <div class="create-actions">
-            <button
-              mat-stroked-button
-              type="button"
-              (click)="showCreateForm.set(false)"
-            >
-              Cancelar
-            </button>
-
-            <button
-              mat-flat-button
-              type="submit"
-              [disabled]="taskForm.invalid || creating()"
-            >
-              <mat-icon>add</mat-icon>
-              {{ creating() ? 'Guardando...' : 'Crear tarea' }}
-            </button>
-          </div>
-        </form>
-      </mat-card-content>
-    </mat-card>
-  }
 
   <!-- CONTROLES -->
 
@@ -266,7 +197,7 @@
               mat-icon-button
               type="button"
               aria-label="Crear tarea"
-              (click)="showCreateForm.set(true)"
+              (click)="openCreateDialog()"
             >
               <mat-icon>add</mat-icon>
             </button>
@@ -309,6 +240,34 @@
                 <p>
                   {{ task.description || 'Sin descripción' }}
                 </p>
+
+                <div class="task-meta">
+                  <div class="task-badges">
+                    <span class="priority-badge" [class]="'priority-' + task.priority">
+                      {{ priorityLabel(task.priority) }}
+                    </span>
+                    <span class="category-badge">{{ categoryLabel(task.category) }}</span>
+                  </div>
+                  @if (task.dueDate; as dueDate) {
+                    <div class="task-detail" [class.overdue]="isOverdue(task)">
+                      <mat-icon>event</mat-icon>
+                      <span>{{ dueDateLabel(dueDate) }}</span>
+                      @if (isOverdue(task)) { <strong>Vencida</strong> }
+                    </div>
+                  }
+                  <div class="task-detail">
+                    <mat-icon>person_outline</mat-icon>
+                    <span>Creada por: {{ task.createdByUserName || 'Usuario actual' }}</span>
+                  </div>
+                  <div class="task-detail">
+                    <mat-icon>assignment_ind</mat-icon>
+                    <span>Asignada a: {{ task.assignedToUserName || 'Usuario actual' }}</span>
+                  </div>
+                  <div class="task-detail muted">
+                    <mat-icon>update</mat-icon>
+                    <span>Modificada: {{ task.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                </div>
 
                 <div class="card-footer">
                   <span class="task-id">
@@ -399,6 +358,34 @@
                   {{ task.description || 'Sin descripción' }}
                 </p>
 
+                <div class="task-meta">
+                  <div class="task-badges">
+                    <span class="priority-badge" [class]="'priority-' + task.priority">
+                      {{ priorityLabel(task.priority) }}
+                    </span>
+                    <span class="category-badge">{{ categoryLabel(task.category) }}</span>
+                  </div>
+                  @if (task.dueDate; as dueDate) {
+                    <div class="task-detail" [class.overdue]="isOverdue(task)">
+                      <mat-icon>event</mat-icon>
+                      <span>{{ dueDateLabel(dueDate) }}</span>
+                      @if (isOverdue(task)) { <strong>Vencida</strong> }
+                    </div>
+                  }
+                  <div class="task-detail">
+                    <mat-icon>person_outline</mat-icon>
+                    <span>Creada por: {{ task.createdByUserName || 'Usuario actual' }}</span>
+                  </div>
+                  <div class="task-detail">
+                    <mat-icon>assignment_ind</mat-icon>
+                    <span>Asignada a: {{ task.assignedToUserName || 'Usuario actual' }}</span>
+                  </div>
+                  <div class="task-detail muted">
+                    <mat-icon>update</mat-icon>
+                    <span>Modificada: {{ task.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                </div>
+
                 <div class="card-footer">
                   <span class="task-id">
                     #{{ task.id }}
@@ -487,6 +474,34 @@
                 <p>
                   {{ task.description || 'Sin descripción' }}
                 </p>
+
+                <div class="task-meta">
+                  <div class="task-badges">
+                    <span class="priority-badge" [class]="'priority-' + task.priority">
+                      {{ priorityLabel(task.priority) }}
+                    </span>
+                    <span class="category-badge">{{ categoryLabel(task.category) }}</span>
+                  </div>
+                  @if (task.dueDate; as dueDate) {
+                    <div class="task-detail" [class.overdue]="isOverdue(task)">
+                      <mat-icon>event</mat-icon>
+                      <span>{{ dueDateLabel(dueDate) }}</span>
+                      @if (isOverdue(task)) { <strong>Vencida</strong> }
+                    </div>
+                  }
+                  <div class="task-detail">
+                    <mat-icon>person_outline</mat-icon>
+                    <span>Creada por: {{ task.createdByUserName || 'Usuario actual' }}</span>
+                  </div>
+                  <div class="task-detail">
+                    <mat-icon>assignment_ind</mat-icon>
+                    <span>Asignada a: {{ task.assignedToUserName || 'Usuario actual' }}</span>
+                  </div>
+                  <div class="task-detail muted">
+                    <mat-icon>update</mat-icon>
+                    <span>Modificada: {{ task.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                </div>
 
                 <div class="card-footer">
                   <span class="task-id">
@@ -587,6 +602,33 @@
               <p>
                 {{ task.description || 'Sin descripción' }}
               </p>
+              <div class="task-meta list-meta">
+                <div class="task-badges">
+                  <span class="priority-badge" [class]="'priority-' + task.priority">
+                    {{ priorityLabel(task.priority) }}
+                  </span>
+                  <span class="category-badge">{{ categoryLabel(task.category) }}</span>
+                </div>
+                @if (task.dueDate; as dueDate) {
+                  <div class="task-detail" [class.overdue]="isOverdue(task)">
+                    <mat-icon>event</mat-icon>
+                    <span>Vence: {{ dueDateLabel(dueDate) }}</span>
+                    @if (isOverdue(task)) { <strong>Vencida</strong> }
+                  </div>
+                }
+                <div class="task-detail">
+                  <mat-icon>person_outline</mat-icon>
+                  <span>Creada por: {{ task.createdByUserName || 'Usuario actual' }}</span>
+                </div>
+                <div class="task-detail">
+                  <mat-icon>assignment_ind</mat-icon>
+                  <span>Asignada a: {{ task.assignedToUserName || 'Usuario actual' }}</span>
+                </div>
+                <div class="task-detail muted">
+                  <mat-icon>update</mat-icon>
+                  <span>Modificada: {{ task.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+              </div>
             </div>
 
             <span

@@ -71,22 +71,35 @@ export class AuthService {
     }
 
     login(request: LoginRequest): Observable<AuthTokens> {
+        return this.startSession(`${this.apiUrl}/login`, request);
+    }
+
+    startDemo(): Observable<AuthTokens> {
+        return this.startSession(`${this.apiUrl}/demo`, {});
+    }
+
+    resetDemo(): Observable<void> {
+        // Fuera de /auth para que el interceptor añada el Bearer token.
+        return this.http.post<void>(
+            `${environment.apiUrl}/demo/reset`, {}
+        );
+    }
+
+    private startSession(
+        url: string,
+        body: LoginRequest | Record<string, never>
+    ): Observable<AuthTokens> {
         return defer(() => {
             const version = ++this.sessionVersion;
 
-            return this.http.post<AuthTokens>(
-                `${this.apiUrl}/login`,
-                request,
-                { withCredentials: true }
-            ).pipe(
+            return this.http.post<AuthTokens>(url, body, {
+                withCredentials: true
+            }).pipe(
                 tap(tokens => {
-                    if (version !== this.sessionVersion) {
-                        return;
-                    }
+                    if (version !== this.sessionVersion) return;
 
                     this.generation = crypto.randomUUID();
                     this.rotationId = crypto.randomUUID();
-
                     this.setSession(tokens);
 
                     this.channel?.postMessage({

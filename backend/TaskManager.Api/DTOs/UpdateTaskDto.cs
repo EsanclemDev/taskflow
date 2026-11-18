@@ -1,4 +1,3 @@
-
 using System.ComponentModel.DataAnnotations;
 
 namespace TaskManager.Api.DTOs;
@@ -17,7 +16,22 @@ public class UpdateTaskDto
 
     [RegularExpression(
         @"^(pending|in_progress|completed)$",
-        ErrorMessage = "El estado de la tarea no es válido."
-    )]
+        ErrorMessage = "El estado de la tarea no es válido.")]
     public string? Status { get; set; }
+
+    [RegularExpression(
+        @"^(low|medium|high|urgent)$",
+        ErrorMessage = "La prioridad de la tarea no es válida.")]
+    public string? Priority { get; set; }
+
+    [RegularExpression(
+        @"^(frontend|backend|database|documentation|other)$",
+        ErrorMessage = "La categoría de la tarea no es válida.")]
+    public string? Category { get; set; }
+
+    // Si se omite, conserva la fecha existente.
+    public DateOnly? DueDate { get; set; }
+
+    // Enviar true para borrar expresamente la fecha límite.
+    public bool ClearDueDate { get; set; }
 }

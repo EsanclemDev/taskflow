@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -25,18 +24,44 @@ public class TasksController : ControllerBase
         _userManager = userManager;
     }
 
+    // Proyección traducible a SQL: devuelve solo datos seguros del usuario.
+    private static IQueryable<TaskResponseDto> ProjectTasks(
+        IQueryable<TaskItem> tasks)
+    {
+        return tasks.Select(t => new TaskResponseDto
+        {
+            Id = t.Id,
+            Title = t.Title,
+            Description = t.Description,
+            IsCompleted = t.IsCompleted,
+            Status = t.Status,
+            Priority = t.Priority,
+            Category = t.Category,
+            DueDate = t.DueDate,
+            CreatedAt = t.CreatedAt,
+            UpdatedAt = t.UpdatedAt,
+            UserId = t.UserId,
+            CreatedByUserId = t.CreatedByUserId,
+            CreatedByUserName = t.CreatedByUser != null
+                ? t.CreatedByUser.UserName
+                : null,
+            AssignedToUserId = t.AssignedToUserId,
+            AssignedToUserName = t.AssignedToUser != null
+                ? t.AssignedToUser.UserName
+                : null
+        });
+    }
+
     // GET: api/tasks
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
+    public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetTasks()
     {
         var userId = _userManager.GetUserId(User);
-
         if (userId == null)
             return Unauthorized();
 
-        var tasks = await _context.Tasks
-            .AsNoTracking()
-            .Where(t => t.UserId == userId)
+        var tasks = await ProjectTasks(_context.Tasks.AsNoTracking()
+                .Where(t => t.UserId == userId))
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
@@ -45,17 +70,15 @@ public class TasksController : ControllerBase
 
     // GET: api/tasks/5
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<TaskItem>> GetTask(int id)
+    public async Task<ActionResult<TaskResponseDto>> GetTask(int id)
     {
         var userId = _userManager.GetUserId(User);
-
         if (userId == null)
             return Unauthorized();
 
-        var task = await _context.Tasks
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t =>
-                t.Id == id && t.UserId == userId);
+        var task = await ProjectTasks(_context.Tasks.AsNoTracking()
+                .Where(t => t.Id == id && t.UserId == userId))
+            .FirstOrDefaultAsync();
 
         if (task == null)
             return NotFound();
@@ -65,13 +88,14 @@ public class TasksController : ControllerBase
 
     // POST: api/tasks
     [HttpPost]
-    public async Task<ActionResult<TaskItem>> CreateTask(
+    public async Task<ActionResult<TaskResponseDto>> CreateTask(
         CreateTaskDto dto)
     {
         var userId = _userManager.GetUserId(User);
-
         if (userId == null)
             return Unauthorized();
+
+        var now = DateTime.UtcNow;
 
         var task = new TaskItem
         {
@@ -79,17 +103,27 @@ public class TasksController : ControllerBase
             Description = dto.Description,
             Status = TaskWorkflowStatus.Pending,
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow,
-            UserId = userId
+            Priority = dto.Priority ?? TaskPriority.Medium,
+            Category = dto.Category ?? TaskCategory.Other,
+            DueDate = dto.DueDate,
+            CreatedAt = now,
+            UpdatedAt = now,
+            UserId = userId,
+            CreatedByUserId = userId,
+            AssignedToUserId = userId
         };
 
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync();
 
+        var response = await ProjectTasks(_context.Tasks.AsNoTracking()
+                .Where(t => t.Id == task.Id && t.UserId == userId))
+            .FirstAsync();
+
         return CreatedAtAction(
             nameof(GetTask),
             new { id = task.Id },
-            task);
+            response);
     }
 
     // PUT: api/tasks/5
@@ -99,13 +133,11 @@ public class TasksController : ControllerBase
         UpdateTaskDto dto)
     {
         var userId = _userManager.GetUserId(User);
-
         if (userId == null)
             return Unauthorized();
 
         var task = await _context.Tasks
-            .FirstOrDefaultAsync(t =>
-                t.Id == id && t.UserId == userId);
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
         if (task == null)
             return NotFound();
@@ -115,23 +147,33 @@ public class TasksController : ControllerBase
 
         if (dto.Status != null)
         {
-            // El nuevo frontend envía el estado Kanban.
             task.Status = dto.Status;
             task.IsCompleted =
                 dto.Status == TaskWorkflowStatus.Completed;
         }
         else if (dto.IsCompleted.HasValue)
         {
-            // Compatibilidad con el frontend anterior.
             task.IsCompleted = dto.IsCompleted.Value;
-
             task.Status = dto.IsCompleted.Value
                 ? TaskWorkflowStatus.Completed
                 : TaskWorkflowStatus.Pending;
         }
 
-        await _context.SaveChangesAsync();
+        // Si el frontend antiguo no envía estos campos, se conservan.
+        if (dto.Priority != null)
+            task.Priority = dto.Priority;
 
+        if (dto.Category != null)
+            task.Category = dto.Category;
+
+        if (dto.ClearDueDate)
+            task.DueDate = null;
+        else if (dto.DueDate.HasValue)
+            task.DueDate = dto.DueDate.Value;
+
+        task.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
         return NoContent();
     }
 
@@ -142,25 +184,21 @@ public class TasksController : ControllerBase
         UpdateTaskStatusDto dto)
     {
         var userId = _userManager.GetUserId(User);
-
         if (userId == null)
             return Unauthorized();
 
         var task = await _context.Tasks
-            .FirstOrDefaultAsync(t =>
-                t.Id == id && t.UserId == userId);
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
         if (task == null)
             return NotFound();
 
         task.Status = dto.Status;
-
-        // Mantener compatibilidad con las estadísticas.
         task.IsCompleted =
             dto.Status == TaskWorkflowStatus.Completed;
+        task.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 
@@ -169,20 +207,17 @@ public class TasksController : ControllerBase
     public async Task<IActionResult> DeleteTask(int id)
     {
         var userId = _userManager.GetUserId(User);
-
         if (userId == null)
             return Unauthorized();
 
         var task = await _context.Tasks
-            .FirstOrDefaultAsync(t =>
-                t.Id == id && t.UserId == userId);
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
         if (task == null)
             return NotFound();
 
         _context.Tasks.Remove(task);
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 }

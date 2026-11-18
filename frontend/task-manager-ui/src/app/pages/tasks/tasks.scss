@@ -132,54 +132,6 @@
   }
 }
 
-// FORMULARIO
-
-.create-card {
-  margin-bottom: 28px;
-  border: 1px solid #dbeafe;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: none;
-
-  mat-card-header {
-    padding: 22px 24px 0;
-  }
-
-  mat-card-title {
-    font-size: 18px;
-    font-weight: 700;
-  }
-
-  mat-card-subtitle {
-    color: #64748b;
-    font-size: 13px;
-  }
-
-  mat-card-content {
-    padding: 24px;
-  }
-}
-
-.create-fields {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-  gap: 16px;
-
-  mat-form-field {
-    width: 100%;
-  }
-}
-
-.create-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-
-  button {
-    border-radius: 10px;
-  }
-}
-
 // BARRA DE HERRAMIENTAS
 
 .board-toolbar {
@@ -764,4 +716,63 @@
   .cdk-drag-animating {
     transition: none;
   }
+}
+
+// DETALLES DE TAREA: PRIORIDAD, CATEGORÍA, FECHAS Y USUARIOS
+.task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.task-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.priority-badge,
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.priority-low { background: #f1f5f9; color: #475569; }
+.priority-medium { background: #dbeafe; color: #1d4ed8; }
+.priority-high { background: #ffedd5; color: #c2410c; }
+.priority-urgent { background: #fee2e2; color: #b91c1c; }
+.category-badge { background: #f1f5f9; color: #334155; }
+
+.task-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+
+  mat-icon {
+    width: 15px;
+    height: 15px;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  span { overflow-wrap: anywhere; }
+  strong { font-size: 10px; }
+
+  &.overdue { color: #b91c1c; }
+  &.muted { color: #94a3b8; }
+}
+
+.list-meta {
+  margin-top: 10px;
+  gap: 5px;
 }

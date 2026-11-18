@@ -175,7 +175,7 @@
                   {{ currentUser()?.email ?? 'Usuario' }}
                 }
               </strong>
-              <span>Mi cuenta</span>
+              <span>{{ currentUser()?.isDemo ? 'Modo demo' : 'Mi cuenta' }}</span>
             </div>
 
             <mat-icon class="user-chevron">
@@ -192,6 +192,22 @@
                   {{ currentUser()?.email ?? 'Usuario' }}
                 </strong>
               </div>
+
+              @if (currentUser()?.isDemo) {
+                <div class="demo-user-note">Cuenta temporal · 24 horas</div>
+                <button
+                  type="button"
+                  class="demo-reset-button"
+                  [disabled]="resettingDemo()"
+                  (click)="resetDemo()"
+                >
+                  <mat-icon>restart_alt</mat-icon>
+                  {{ resettingDemo() ? 'Restableciendo...' : 'Restablecer demo' }}
+                </button>
+                @if (demoError()) {
+                  <p class="demo-reset-error" role="alert">{{ demoError() }}</p>
+                }
+              }
 
               <div class="dropdown-divider"></div>
 
@@ -217,6 +233,13 @@
       </div>
 
     </header>
+
+    @if (currentUser()?.isDemo) {
+      <div class="demo-banner" role="status">
+        <mat-icon>science</mat-icon>
+        Modo demostración: los cambios son privados y temporales.
+      </div>
+    }
 
     <main class="page-content">
       <router-outlet />

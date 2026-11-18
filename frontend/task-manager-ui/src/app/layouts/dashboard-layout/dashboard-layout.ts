@@ -45,6 +45,8 @@ export class DashboardLayout implements OnInit {
   readonly currentUser = signal<CurrentUser | null>(null);
   readonly userLoading = signal(true);
   readonly loggingOut = signal(false);
+  readonly resettingDemo = signal(false);
+  readonly demoError = signal('');
 
   readonly currentPath = signal(this.router.url.split('?')[0]);
 
@@ -117,6 +119,25 @@ export class DashboardLayout implements OnInit {
 
   toggleUserMenu(): void {
     this.userMenuOpen.update(value => !value);
+  }
+
+  resetDemo(): void {
+    if (!this.currentUser()?.isDemo || this.resettingDemo()) return;
+
+    this.resettingDemo.set(true);
+    this.demoError.set('');
+    this.authService.resetDemo()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          // Recarga todas las vistas y estadísticas con las tareas restauradas.
+          window.location.reload();
+        },
+        error: () => {
+          this.resettingDemo.set(false);
+          this.demoError.set('No se ha podido restablecer la demo.');
+        }
+      });
   }
 
   logout(): void {

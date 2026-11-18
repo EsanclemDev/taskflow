@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.DataProtection;
@@ -14,6 +16,23 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AccessTokenService>();
+builder.Services.AddScoped<DemoAccountService>();
+
+// Límite conservador por IP para la creación pública de cuentas demo.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("demo-create", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -42,6 +61,10 @@ if (!builder.Environment.IsEnvironment("Testing"))
         options.UseNpgsql(
             builder.Configuration.GetConnectionString("DefaultConnection")));
 }
+
+// La limpieza solo se ejecuta en entornos con base de datos real.
+if (!builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddHostedService<DemoCleanupService>();
 
 // Persistencia de claves de autenticación
 builder.Services
@@ -105,10 +128,15 @@ if (app.Environment.IsDevelopment())
 // Middleware
 app.UseHttpsRedirection();
 
+app.UseRouting();
 app.UseCors("AngularFrontend");
+app.UseRateLimiter();
 
 // 1. Identificar al usuario mediante su access token.
 app.UseAuthentication();
+
+// Bloquea tokens de cuentas demo caducadas incluso antes de la limpieza.
+app.UseMiddleware<DemoExpirationMiddleware>();
 
 // 2. Comprobar que la familia de sesión sigue activa.
 app.UseMiddleware<ActiveSessionMiddleware>();
